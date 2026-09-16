@@ -161,7 +161,9 @@
           <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">圖片尺寸 / 比例</label>
             <select id="selectResolution" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
-              <option value="1536x864">16:9 橫圖 (1536x864) 施政簡報</option>
+              <option value="1920x1088">16:9 FHD 高清 (1920x1080 / 1088)</option>
+              <option value="1536x864">16:9 橫圖 (1536x864) 快速簡報</option>
+              <option value="3840x2160">16:9 4K 旗艦 (3840x2160)</option>
               <option value="1024x1024">1:1 正方形 (1024x1024) 攻防梗圖</option>
               <option value="864x1536" selected>9:16 直式 (864x1536) 早安/文宣</option>
               <option value="1024x768">4:3 標準 (1024x768)</option>
@@ -732,7 +734,7 @@
       policy: {
         name: '官方高質感施政圖卡 (policy-infographics)',
         themeColor: 'emerald',
-        aspect: '1536x864', // 16:9
+        aspect: '1920x1088', // 16:9 Full HD 1080p (符合 OpenAI 16 倍數)
         options: [
           {
             title: '【重大建設】半屏實景融圖＋左側核心亮點 (16:9)',
@@ -776,7 +778,7 @@
       campaign: {
         name: '2026 選戰專用圖卡 (campaign-card)',
         themeColor: 'amber',
-        aspect: '1536x864', // 16:9
+        aspect: '1920x1088', // 16:9 Full HD 1080p (符合 OpenAI 16 倍數)
         options: [
           {
             title: '模組 1：【純文字哲思／政策金句型】瑞士風排版＋雙字體亮點 (16:9)',
@@ -1749,12 +1751,28 @@
       }
     });
 
+    // 自動尺寸校準（符合 OpenAI GPT Image 2.5 必須為 16 倍數原則；或 DALL-E 3 固定規範）
+    function getValidOpenAISize(sizeStr, model) {
+      if (!sizeStr) return '1024x1024';
+      if (model === 'dall-e-3') {
+        if (sizeStr === '1024x1024') return '1024x1024';
+        const [w, h] = sizeStr.split('x').map(Number);
+        return (w && h && w >= h) ? '1792x1024' : '1024x1792';
+      }
+      // GPT Image 2.5 系列 (flare / sunburst)：寬高必須為 16 的整數倍數 (例: 1080 -> 1088)
+      const [w, h] = sizeStr.split('x').map(Number);
+      if (!w || !h) return '1024x1024';
+      const validW = Math.max(480, Math.min(3840, Math.round(w / 16) * 16));
+      const validH = Math.max(480, Math.min(3840, Math.round(h / 16) * 16));
+      return `${validW}x${validH}`;
+    }
+
     // 13.1 純文字生圖
     async function executeGeneration(apiKey, prompt) {
       setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
       try {
         const model = selectModel.value;
-        const size = selectResolution.value;
+        const size = getValidOpenAISize(selectResolution.value, model);
         const quality = selectQuality.value;
         const background = selectBackground.value;
         const format = selectFormat.value;
@@ -1821,7 +1839,7 @@
       setLoading(true, '正在依據參考圖片透過 GPT Image 2.5 以圖生圖中...');
       try {
         const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-flare';
-        const size = selectResolution.value;
+        const size = getValidOpenAISize(selectResolution.value, model);
         const [targetW, targetH] = size.split('x').map(Number);
 
         // 轉換為標準尺寸 PNG Blob
@@ -1940,7 +1958,8 @@
         formData.append('prompt', prompt);
         formData.append('model', model);
         formData.append('n', '1');
-        formData.append('size', `${nativeW}x${nativeH}`);
+        const validInpaintSize = getValidOpenAISize(`${nativeW}x${nativeH}`, model);
+        formData.append('size', validInpaintSize);
 
         const response = await fetch('https://api.openai.com/v1/images/edits', {
           method: 'POST',
