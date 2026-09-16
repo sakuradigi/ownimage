@@ -94,7 +94,7 @@
             GPT Image 2.5 視覺創作與圖像修復工作台
           </h1>
           <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 局部遮罩重繪 ‧ 創意圖卡排版
+            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 局部遮罩重繪 ‧ 本機永久自動保存
           </p>
         </div>
       </div>
@@ -229,6 +229,14 @@
           </p>
         </div>
 
+        <!-- 自動備份下載勾選框 -->
+        <div class="flex items-center justify-between px-1">
+          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400 select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            <input type="checkbox" id="chkAutoDownload" class="rounded accent-emerald-500 w-4 h-4 cursor-pointer" checked>
+            <span class="font-medium">生成完成後自動下載至電腦備份 (Downloads)</span>
+          </label>
+        </div>
+
         <!-- 執行按鈕 -->
         <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
@@ -350,26 +358,22 @@
       <!-- 畫布展示主區域 (支援縮放、最適全圖預覽與滾動) -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-xl flex-1 flex flex-col items-center justify-center min-h-[500px] relative transition-colors">
         
-        <!-- 畫布浮動縮放控制列 (關鍵新功能：放大、縮小、100%、最適全圖) -->
+        <!-- 畫布浮動縮放控制列 -->
         <div class="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-md text-xs">
-          <!-- 縮小 -->
           <button id="btnZoomOut" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" title="縮小 (Ctrl + 滾輪向下)">
             <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
           </button>
           
-          <!-- 當前縮放百分比 (點擊重設 100%) -->
           <button id="btnZoomReset" class="px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-colors" title="點擊重設 100% 原寸">
             <span id="zoomPercentLabel">100%</span>
           </button>
 
-          <!-- 放大 -->
           <button id="btnZoomIn" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" title="放大 (Ctrl + 滾輪向上)">
             <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
           </button>
 
           <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
 
-          <!-- 適應螢幕全圖 (Fit to View) -->
           <button id="btnFitScreen" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors shadow-sm" title="完整呈現全圖 (不裁切任何角落)">
             <i data-lucide="maximize-2" class="w-3 h-3"></i>
             <span>最適全圖</span>
@@ -383,7 +387,7 @@
           </div>
           <p class="text-slate-700 dark:text-slate-200 font-bold text-base mb-1">畫布目前為空</p>
           <p class="text-slate-500 dark:text-slate-400 text-xs max-w-sm">
-            請在左側輸入提示詞點擊「立即生成圖片」，或點擊上方「開啟本機圖片」載入您想修改的圖卡！
+            請在左側輸入提示詞點擊「立即生成圖片」，或點擊下方歷史圖庫快速載入！
           </p>
         </div>
 
@@ -401,17 +405,25 @@
 
       </div>
 
-      <!-- 底部歷史縮圖庫 (Session Gallery) -->
+      <!-- 底部永久歷史縮圖庫 (IndexedDB 永久保存) -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors">
         <div class="flex items-center justify-between mb-2.5">
           <div class="flex items-center gap-2">
-            <i data-lucide="history" class="w-4 h-4 text-emerald-500"></i>
-            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">本次歷史創作紀錄 (點擊可重新載入加工)</h3>
+            <i data-lucide="database" class="w-4 h-4 text-emerald-500"></i>
+            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">
+              本機永久歷史圖庫 (<span id="historyCount">0</span>) ‧ 重新整理絕不消失
+            </h3>
           </div>
-          <button id="btnClearHistory" class="text-xs text-slate-400 hover:text-rose-500 transition-colors">清除歷史</button>
+          <div class="flex items-center gap-3">
+            <button id="btnClearHistory" class="text-xs text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-1">
+              <i data-lucide="trash" class="w-3 h-3"></i> 清除全部歷史
+            </button>
+          </div>
         </div>
-        <div id="historyStrip" class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[90px] items-center">
-          <p id="historyEmptyMsg" class="text-xs text-slate-400 dark:text-slate-600 italic">尚無生成紀錄，生成後的圖片會在此累積...</p>
+        
+        <!-- 歷史縮圖滑動軌道 -->
+        <div id="historyStrip" class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[105px] items-center">
+          <p id="historyEmptyMsg" class="text-xs text-slate-400 dark:text-slate-600 italic">尚無生成紀錄，生成後的每張圖片都會永久保存於此，重整不遺失...</p>
         </div>
       </div>
 
@@ -469,24 +481,24 @@
       
       <div class="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 完整預覽與自由縮放：</p>
+          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 本機永久儲存 (IndexedDB)：</p>
           <ul class="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
-            <li>無論是 9:16 直式早安圖或 16:9 寬螢幕圖，點擊右上角「<strong>最適全圖</strong>」即可一覽無遺，絕不裁切任何角落！</li>
-            <li>可隨時使用 <strong>[+]</strong>、<strong>[-]</strong> 或按住 <strong>Ctrl/Command + 滑鼠滾輪</strong> 放大檢視細節。</li>
+            <li>每張生成的原圖與修改圖，都會自動轉為高畫質資料永久存入您電腦瀏覽器的資料庫中。</li>
+            <li><strong>即使重新整理網頁、關掉瀏覽器或重開機，歷史圖片依然全部保留</strong>！點擊隨時重新載入畫布二次修圖。</li>
           </ul>
         </div>
 
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
           <p class="font-bold text-amber-600 dark:text-amber-400 mb-1">2. 局部修圖支援「上一步 (Undo)」：</p>
           <p class="text-slate-600 dark:text-slate-400">
-            切換至「局部遮罩修圖」，使用紅色筆刷塗抹想要修改的局部。若畫錯不必重來，直接點擊「<strong>上一步</strong>」（或按鍵盤 <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Cmd+Z</code> / <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Ctrl+Z</code>）即可輕鬆撤銷！
+            切換至「局部遮罩修圖」，使用紅色筆刷塗抹想要修改的局部。若畫錯不必重來，直接點擊「<strong>上一步</strong>」（或按鍵盤 <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Cmd+Z</code> / <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Ctrl+Z</code>）即可撤銷！
           </p>
         </div>
 
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-teal-600 dark:text-teal-400 mb-1">3. 風格字效與快速出圖：</p>
+          <p class="font-bold text-teal-600 dark:text-teal-400 mb-1">3. 最適全圖與縮放控制：</p>
           <p class="text-slate-600 dark:text-slate-400">
-            點擊「+頂部文字」或「+底部文字」自由排版，支援字體外框描邊效果，完成後一鍵下載或複製到剪貼簿。
+            9:16 直式早安圖或任何比例圖，點擊畫布右上角「<strong>最適全圖</strong>」即可滿版全覽不裁切，使用滑鼠滾輪或放大縮小鈕可檢視細部細節。
           </p>
         </div>
       </div>
@@ -502,9 +514,8 @@
     let currentMode = 'generate'; // 'generate' | 'edit'
     let activeTool = 'select';    // 'select' | 'brush'
     let currentImageObj = null;   // 當前載入的 Fabric.Image
-    let historyList = [];         // 歷史紀錄陣列
     let currentZoom = 1.0;        // 當前視窗縮放比例
-    let originalNativeW = 864;    // 原生畫布寬度 (用於維持匯出與 API 高解析度)
+    let originalNativeW = 864;    // 原生畫布寬度 (保持原生解析度)
     let originalNativeH = 1536;   // 原生畫布高度
 
     // 遮罩歷史堆疊（實作 Undo / Redo）
@@ -529,6 +540,8 @@
     const canvasSizeLabel = document.getElementById('canvasSizeLabel');
     const historyStrip = document.getElementById('historyStrip');
     const historyEmptyMsg = document.getElementById('historyEmptyMsg');
+    const historyCount = document.getElementById('historyCount');
+    const chkAutoDownload = document.getElementById('chkAutoDownload');
     const canvasViewport = document.getElementById('canvasViewport');
     const canvasWrapper = document.getElementById('canvasWrapper');
 
@@ -587,7 +600,223 @@
     const btnCloseHelpModal = document.getElementById('btnCloseHelpModal');
 
     // -------------------------------------------------------------
-    // 2. 主題切換 (Light / Dark Mode)
+    // 2. 本機永久資料庫 (IndexedDB) - 核心持久化模組
+    // -------------------------------------------------------------
+    const DB_NAME = 'VisualStudioHistoryDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'generated_images';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            store.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function saveImageToDB(dataUrl, prompt, model, size) {
+      try {
+        const db = await openDB();
+        const item = {
+          dataUrl: dataUrl,
+          prompt: prompt || '未命名圖卡',
+          model: model || 'gpt-image-2.5',
+          size: size || '864x1536',
+          timestamp: Date.now(),
+          createdAt: new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' })
+        };
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.add(item);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.error('IndexedDB 儲存失敗:', err);
+      }
+    }
+
+    async function loadAllFromDB() {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readonly');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => {
+            const list = (req.result || []).sort((a, b) => b.timestamp - a.timestamp);
+            resolve(list);
+          };
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.error('IndexedDB 讀取失敗:', err);
+        return [];
+      }
+    }
+
+    async function deleteFromDB(id) {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.delete(id);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.error('IndexedDB 刪除失敗:', err);
+      }
+    }
+
+    async function clearAllFromDB() {
+      try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          const req = store.clear();
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.error('IndexedDB 清空失敗:', err);
+      }
+    }
+
+    // 確保外部遠端圖片連結轉換為永久 Base64 DataURL
+    async function ensureDataUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('data:')) return url;
+      try {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('URL 轉 DataURL 警告:', e);
+        return url;
+      }
+    }
+
+    // 重新渲染歷史縮圖庫
+    async function refreshGalleryFromDB() {
+      const list = await loadAllFromDB();
+      historyCount.innerText = list.length;
+
+      if (list.length === 0) {
+        historyEmptyMsg.classList.remove('hidden');
+        historyStrip.innerHTML = '';
+        historyStrip.appendChild(historyEmptyMsg);
+        return;
+      }
+
+      historyEmptyMsg.classList.add('hidden');
+      historyStrip.innerHTML = '';
+
+      list.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'group relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-emerald-500 cursor-pointer shadow-md transition-all bg-slate-900';
+        card.title = `${item.prompt}\n(建立時間: ${item.createdAt})`;
+
+        card.innerHTML = `
+          <img src="${item.dataUrl}" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col justify-between p-1.5 transition-opacity text-white">
+            <div class="flex justify-end gap-1">
+              <button class="btn-dl p-1 hover:text-emerald-400 transition-colors" title="下載此圖卡">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              </button>
+              <button class="btn-del p-1 hover:text-rose-400 transition-colors" title="從本機資料庫刪除">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <div class="btn-load text-[10px] font-bold text-center bg-emerald-600 hover:bg-emerald-500 rounded py-1 transition-colors shadow">
+              載入畫布
+            </div>
+          </div>
+          <div class="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-slate-300 text-center truncate px-1 font-mono pointer-events-none group-hover:opacity-0">
+            ${item.createdAt || ''}
+          </div>
+        `;
+
+        // 載入按鈕
+        card.querySelector('.btn-load').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const [w, h] = (item.size || '864x1536').split('x').map(Number);
+          loadImageToCanvas(item.dataUrl, w, h);
+          inputPrompt.value = item.prompt || '';
+          showStatus('已將歷史圖卡重新加載至畫布！', 'info');
+        });
+
+        // 點擊整張卡片也是載入
+        card.addEventListener('click', () => {
+          const [w, h] = (item.size || '864x1536').split('x').map(Number);
+          loadImageToCanvas(item.dataUrl, w, h);
+          inputPrompt.value = item.prompt || '';
+          showStatus('已將歷史圖卡重新加載至畫布！', 'info');
+        });
+
+        // 下載按鈕
+        card.querySelector('.btn-dl').addEventListener('click', (e) => {
+          e.stopPropagation();
+          const link = document.createElement('a');
+          link.download = `AI創作圖卡_${item.createdAt || Date.now()}.png`;
+          link.href = item.dataUrl;
+          link.click();
+          showStatus('📥 已下載歷史原圖', 'success');
+        });
+
+        // 刪除按鈕
+        card.querySelector('.btn-del').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm('確定要從本機資料庫刪除這張歷史圖卡嗎？')) {
+            await deleteFromDB(item.id);
+            refreshGalleryFromDB();
+            showStatus('已刪除該筆歷史紀錄', 'info');
+          }
+        });
+
+        historyStrip.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // 清空歷史按鈕
+    document.getElementById('btnClearHistory').addEventListener('click', async () => {
+      if (confirm('⚠️ 警告：這將會清除本機所有已保存的歷史圖卡！確定要清空嗎？')) {
+        await clearAllFromDB();
+        refreshGalleryFromDB();
+        showStatus('已清空本機所有歷史紀錄', 'info');
+      }
+    });
+
+    // 自動下載備份功能
+    function triggerAutoDownload(dataUrl, prompt) {
+      try {
+        const link = document.createElement('a');
+        link.download = `AI備份_${new Date().toISOString().slice(0,10)}_${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (e) {
+        console.warn('自動下載失敗:', e);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. 主題切換 (Light / Dark Mode)
     // -------------------------------------------------------------
     function initTheme() {
       const savedTheme = localStorage.getItem('app_theme') || 'dark';
@@ -614,7 +843,7 @@
     initTheme();
 
     // -------------------------------------------------------------
-    // 3. 初始化 Fabric.js 畫布與縮放架構
+    // 4. 初始化 Fabric.js 畫布與縮放架構
     // -------------------------------------------------------------
     function initCanvas(nativeWidth = 864, nativeHeight = 1536) {
       if (canvas) {
@@ -632,12 +861,10 @@
         selection: true
       });
 
-      // 設定自由繪圖筆刷（用於遮罩塗抹）
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-      canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.7)'; // 半透明亮紅
+      canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.7)';
       canvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
 
-      // 監聽筆刷路徑生成，支援 Undo/Redo
       canvas.on('path:created', function(opt) {
         opt.path.set({
           isMaskPath: true,
@@ -645,31 +872,27 @@
           evented: false
         });
         maskUndoStack.push(opt.path);
-        maskRedoStack = []; // 清空重做堆疊
+        maskRedoStack = [];
         updateUndoRedoUI();
       });
 
-      // 物件選取監聽
       canvas.on('selection:created', onObjectSelected);
       canvas.on('selection:updated', onObjectSelected);
       canvas.on('selection:cleared', onObjectDeselected);
 
       canvasSizeLabel.innerText = `${nativeWidth} x ${nativeHeight}`;
 
-      // 重置遮罩堆疊
       maskUndoStack = [];
       maskRedoStack = [];
       updateUndoRedoUI();
 
-      // 自動執行最適全圖縮放
       fitToScreen();
     }
 
     // -------------------------------------------------------------
-    // 4. 縮放 (Zoom & Fit) 核心功能
+    // 5. 縮放 (Zoom & Fit)
     // -------------------------------------------------------------
     function applyZoom(zoom) {
-      // 縮放限制在 15% 到 300% 之間
       zoom = Math.max(0.15, Math.min(zoom, 3.0));
       currentZoom = zoom;
 
@@ -681,19 +904,17 @@
       zoomPercentLabel.innerText = `${Math.round(zoom * 100)}%`;
     }
 
-    // 最適全圖 (Fit to Screen) - 完美解決長型/大圖截斷問題！
     function fitToScreen() {
       if (!canvas) return;
       const vpWidth = canvasViewport.clientWidth || 800;
       const vpHeight = canvasViewport.clientHeight || 550;
 
-      // 保留邊界安全距離 (留出 32px 邊距)
       const availW = Math.max(vpWidth - 36, 200);
       const availH = Math.max(vpHeight - 36, 200);
 
       const scaleX = availW / originalNativeW;
       const scaleY = availH / originalNativeH;
-      const bestScale = Math.min(scaleX, scaleY, 1.0); // 最大不超過 100%
+      const bestScale = Math.min(scaleX, scaleY, 1.0);
 
       applyZoom(bestScale);
     }
@@ -703,14 +924,12 @@
     btnZoomReset.addEventListener('click', () => applyZoom(1.0));
     btnFitScreen.addEventListener('click', fitToScreen);
 
-    // 視窗大小變更時若畫布有圖可自適應
     window.addEventListener('resize', () => {
       if (currentImageObj) {
         fitToScreen();
       }
     });
 
-    // 滾輪縮放 (Ctrl/Cmd + 滾輪)
     canvasViewport.addEventListener('wheel', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) {
         e.preventDefault();
@@ -720,7 +939,7 @@
     }, { passive: false });
 
     // -------------------------------------------------------------
-    // 5. 遮罩塗抹「上一步 (Undo) / 下一步 (Redo)」系統
+    // 6. 遮罩塗抹「上一步 (Undo) / 下一步 (Redo)」系統
     // -------------------------------------------------------------
     function updateUndoRedoUI() {
       btnUndoMask.disabled = maskUndoStack.length === 0;
@@ -752,7 +971,6 @@
     btnUndoMask.addEventListener('click', undoLastMask);
     btnRedoMask.addEventListener('click', redoLastMask);
 
-    // 支援全域快捷鍵 Cmd+Z / Ctrl+Z
     window.addEventListener('keydown', (e) => {
       const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
       if (isInput) return;
@@ -767,7 +985,7 @@
     });
 
     // -------------------------------------------------------------
-    // 6. API Key 管理 (localStorage)
+    // 7. API Key 管理 (localStorage)
     // -------------------------------------------------------------
     function getApiKey() {
       return localStorage.getItem('openai_api_key') || '';
@@ -821,7 +1039,7 @@
     btnCloseHelpModal.addEventListener('click', () => helpModal.classList.add('hidden'));
 
     // -------------------------------------------------------------
-    // 7. 模式切換與工具列
+    // 8. 模式切換與工具列
     // -------------------------------------------------------------
     tabGenerate.addEventListener('click', () => switchMode('generate'));
     tabEdit.addEventListener('click', () => switchMode('edit'));
@@ -877,7 +1095,6 @@
       }
     });
 
-    // 清除所有遮罩
     toolClearMask.addEventListener('click', () => {
       clearMaskPaths();
       showStatus('已清除所有塗抹遮罩', 'info');
@@ -896,7 +1113,6 @@
       canvas.renderAll();
     }
 
-    // 刪除選取的物件
     btnDeleteSelected.addEventListener('click', () => {
       const activeObj = canvas.getActiveObject();
       if (activeObj) {
@@ -906,7 +1122,6 @@
       }
     });
 
-    // 鍵盤 Delete
     window.addEventListener('keydown', (e) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         const activeObj = canvas.getActiveObject();
@@ -918,7 +1133,6 @@
       }
     });
 
-    // 風格標籤快捷填入
     document.querySelectorAll('.style-tag').forEach(tag => {
       tag.addEventListener('click', () => {
         const current = inputPrompt.value.trim();
@@ -931,7 +1145,6 @@
       inputPrompt.value = '';
     });
 
-    // 模型 Badge 更新
     selectModel.addEventListener('change', () => {
       const badge = document.getElementById('modelBadge');
       if (selectModel.value === 'gpt-image-2.5-sunburst') {
@@ -947,7 +1160,7 @@
     });
 
     // -------------------------------------------------------------
-    // 8. 文字圖層系統
+    // 9. 文字圖層系統
     // -------------------------------------------------------------
     function addTextToCanvas(text, pos = 'custom') {
       const cWidth = originalNativeW;
@@ -1060,7 +1273,7 @@
     });
 
     // -------------------------------------------------------------
-    // 9. 載入圖片至畫布與自動適應全圖
+    // 10. 載入圖片至畫布與自動適應全圖
     // -------------------------------------------------------------
     function loadImageToCanvas(imgUrl, customWidth, customHeight) {
       fabric.Image.fromURL(imgUrl, function(img) {
@@ -1084,26 +1297,26 @@
         canvasEmptyState.classList.add('hidden');
         canvas.renderAll();
 
-        // 載入完成後立即自動縮放到最適全圖大小！
         fitToScreen();
       }, { crossOrigin: 'anonymous' });
     }
 
-    // 本機圖片上傳
-    fileUpload.addEventListener('change', function(e) {
+    fileUpload.addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(evt) {
-        loadImageToCanvas(evt.target.result);
-        addToHistory(evt.target.result, '本機圖片: ' + file.name);
-        showStatus('✅ 已載入本機圖片', 'success');
+      reader.onload = async function(evt) {
+        const dataUrl = evt.target.result;
+        loadImageToCanvas(dataUrl);
+        await saveImageToDB(dataUrl, '本機圖片: ' + file.name, 'local', `${originalNativeW}x${originalNativeH}`);
+        refreshGalleryFromDB();
+        showStatus('✅ 已載入並永久保存本機圖片至歷史庫', 'success');
       };
       reader.readAsDataURL(file);
     });
 
     // -------------------------------------------------------------
-    // 10. OpenAI API 核心連線 (生圖與局部修圖)
+    // 11. OpenAI API 核心連線 (生圖與局部修圖)
     // -------------------------------------------------------------
     btnExecute.addEventListener('click', async () => {
       const apiKey = getApiKey();
@@ -1127,7 +1340,7 @@
       }
     });
 
-    // 10.1 全新生圖
+    // 11.1 全新生圖
     async function executeGeneration(apiKey, prompt) {
       setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
       try {
@@ -1167,17 +1380,29 @@
         }
 
         const imgData = data.data[0];
-        let imgUrl = '';
+        let rawUrl = '';
         if (imgData.b64_json) {
-          imgUrl = `data:image/${format};base64,${imgData.b64_json}`;
+          rawUrl = `data:image/${format};base64,${imgData.b64_json}`;
         } else if (imgData.url) {
-          imgUrl = imgData.url;
+          rawUrl = imgData.url;
         }
 
+        // 轉為永久 Base64 DataURL，確保存入 IndexedDB 後永遠不過期
+        const permanentDataUrl = await ensureDataUrl(rawUrl);
+
         const [w, h] = size.split('x').map(Number);
-        loadImageToCanvas(imgUrl, w, h);
-        addToHistory(imgUrl, prompt);
-        showStatus('🎉 圖片生成成功！已自動調整為最適全圖預覽', 'success');
+        loadImageToCanvas(permanentDataUrl, w, h);
+
+        // 存入本機永久資料庫 (IndexedDB)
+        await saveImageToDB(permanentDataUrl, prompt, model, size);
+        refreshGalleryFromDB();
+
+        // 自動下載備份到本機電腦 (若有勾選)
+        if (chkAutoDownload.checked) {
+          triggerAutoDownload(permanentDataUrl, prompt);
+        }
+
+        showStatus('🎉 圖片生成成功！已永久保存至本機資料庫，重整絕不遺失', 'success');
       } catch (err) {
         console.error('生圖失敗:', err);
         showStatus(`❌ 生成失敗：${err.message}`, 'error');
@@ -1186,7 +1411,7 @@
       }
     }
 
-    // 10.2 局部遮罩修圖
+    // 11.2 局部遮罩修圖
     async function executeInpaint(apiKey, prompt) {
       if (!currentImageObj) {
         showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
@@ -1205,11 +1430,9 @@
         const nativeH = originalNativeH;
         const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-sunburst';
 
-        // 為了取得滿版原生解析度，暫時還原 Zoom=1.0 導出底圖與遮罩
         const savedZoom = currentZoom;
         applyZoom(1.0);
 
-        // 1. 產生原圖底圖 PNG Blob (隱藏非背景圖層)
         const allObjects = canvas.getObjects();
         const hiddenStates = [];
         allObjects.forEach(obj => {
@@ -1223,7 +1446,6 @@
         const baseDataUrl = canvas.toDataURL({ format: 'png', multiplier: 1 });
         const baseBlob = await (await fetch(baseDataUrl)).blob();
 
-        // 2. 產生 OpenAI 格式遮罩 (修改區透明 alpha=0，保留區不透明 alpha=255)
         const maskCanvas = document.createElement('canvas');
         maskCanvas.width = nativeW;
         maskCanvas.height = nativeH;
@@ -1231,7 +1453,6 @@
 
         maskCtx.fillStyle = '#FFFFFF';
         maskCtx.fillRect(0, 0, nativeW, nativeH);
-
         maskCtx.globalCompositeOperation = 'destination-out';
         
         const tempMaskCanvas = document.createElement('canvas');
@@ -1246,12 +1467,10 @@
         maskCtx.drawImage(tempMaskCanvas, 0, 0);
         const maskBlob = await new Promise(resolve => maskCanvas.toBlob(resolve, 'image/png'));
 
-        // 恢復原圖層顯示與縮放比例
         hiddenStates.forEach(item => item.obj.visible = item.vis);
         applyZoom(savedZoom);
         canvas.renderAll();
 
-        // 3. 發送 FormData 給 OpenAI
         const formData = new FormData();
         formData.append('image', baseBlob, 'image.png');
         formData.append('mask', maskBlob, 'mask.png');
@@ -1274,12 +1493,21 @@
         }
 
         const imgData = data.data[0];
-        const newImgUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
+        const rawUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
+        const permanentDataUrl = await ensureDataUrl(rawUrl);
 
         clearMaskPaths();
-        loadImageToCanvas(newImgUrl, nativeW, nativeH);
-        addToHistory(newImgUrl, '局部修改: ' + prompt);
-        showStatus('✨ 局部重繪修圖完成！', 'success');
+        loadImageToCanvas(permanentDataUrl, nativeW, nativeH);
+
+        // 存入 IndexedDB
+        await saveImageToDB(permanentDataUrl, '局部修改: ' + prompt, model, `${nativeW}x${nativeH}`);
+        refreshGalleryFromDB();
+
+        if (chkAutoDownload.checked) {
+          triggerAutoDownload(permanentDataUrl, prompt);
+        }
+
+        showStatus('✨ 局部重繪修圖完成！已自動保存至本機資料庫', 'success');
 
       } catch (err) {
         console.error('修圖失敗:', err);
@@ -1290,10 +1518,9 @@
     }
 
     // -------------------------------------------------------------
-    // 11. 存檔與導出 (保證滿版高解析度)
+    // 12. 存檔與導出
     // -------------------------------------------------------------
     btnDownload.addEventListener('click', () => {
-      // 暫存縮放與隱藏遮罩
       const savedZoom = currentZoom;
       applyZoom(1.0);
 
@@ -1308,7 +1535,6 @@
         multiplier: 1
       });
 
-      // 恢復狀態
       maskObjects.forEach(o => o.visible = true);
       applyZoom(savedZoom);
       canvas.renderAll();
@@ -1317,7 +1543,7 @@
       link.download = `AI創作圖卡_${new Date().toISOString().slice(0,10)}_${Date.now()}.png`;
       link.href = dataURL;
       link.click();
-      showStatus('📥 高解析圖片已下載至您的電腦', 'success');
+      showStatus('📥 高解析完成圖已下載至您的電腦', 'success');
     });
 
     btnCopyImage.addEventListener('click', async () => {
@@ -1343,45 +1569,6 @@
       } catch (err) {
         showStatus('無法直接複製圖片，請改用「下載」功能', 'error');
       }
-    });
-
-    // 歷史紀錄
-    function addToHistory(url, title) {
-      historyList.unshift({ url, title, time: new Date().toLocaleTimeString() });
-      renderHistory();
-    }
-
-    function renderHistory() {
-      if (historyList.length === 0) {
-        historyEmptyMsg.classList.remove('hidden');
-        return;
-      }
-      historyEmptyMsg.classList.add('hidden');
-      historyStrip.innerHTML = '';
-
-      historyList.forEach((item) => {
-        const thumb = document.createElement('div');
-        thumb.className = 'group relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-emerald-500 cursor-pointer shadow-md transition-all';
-        thumb.title = item.title;
-        thumb.innerHTML = `
-          <img src="${item.url}" class="w-full h-full object-cover">
-          <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-[10px] text-white p-1 text-center font-bold">
-            載入
-          </div>
-        `;
-        thumb.addEventListener('click', () => {
-          loadImageToCanvas(item.url);
-          showStatus('已載入歷史圖片至畫布', 'info');
-        });
-        historyStrip.appendChild(thumb);
-      });
-    }
-
-    document.getElementById('btnClearHistory').addEventListener('click', () => {
-      historyList = [];
-      historyStrip.innerHTML = '';
-      historyEmptyMsg.classList.remove('hidden');
-      showStatus('已清空歷史紀錄', 'info');
     });
 
     // 狀態與輔助控制
@@ -1417,9 +1604,13 @@
       }, 7000);
     }
 
-    // 啟動時預設初始化
+    // -------------------------------------------------------------
+    // 13. 應用程式啟動初始化
+    // -------------------------------------------------------------
     initCanvas(864, 1536);
     updateKeyStatusUI();
+    // 啟動時自動從 IndexedDB 載入所有歷史圖片！
+    refreshGalleryFromDB();
   </script>
 </body>
 </html>
