@@ -166,9 +166,9 @@
             <span id="modelBadge" class="text-[10px] bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">極速生圖</span>
           </div>
           <select id="selectModel" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="gpt-image-2.5-flare" selected>gpt-image-2.5-flare (推薦：速度提升 50%)</option>
+            <option value="gpt-image-2.5-flare" selected>gpt-image-2.5-flare (快速生圖)</option>
             <option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst (旗艦：高精細/精準修圖)</option>
-            <option value="dall-e-3">dall-e-3 (相容備用)</option>
+            <option value="gpt-image-2">gpt-image-2 (相容備用)</option>
           </select>
         </div>
 
@@ -194,6 +194,8 @@
               <option value="medium" selected>Medium 一般 (快速推薦)</option>
               <option value="high">High 高品質</option>
               <option value="low">Low 快速草稿</option>
+              <option value="xhigh">XHigh 精修 (僅 2.5)</option>
+              <option value="max">Max 最高 (僅 2.5，最慢)</option>
             </select>
           </div>
 
@@ -703,7 +705,7 @@
         <div id="maskActiveAlert" class="hidden p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-2.5 transition-all shadow-sm">
           <div class="flex items-center gap-1.5 font-medium">
             <i data-lucide="target" class="w-4 h-4 text-rose-500 flex-shrink-0"></i>
-            <span>🎯 <strong>已鎖定紅框標註！</strong>本次將針對<strong>紅框內部獨立重繪</strong>，未框選區域絕對原樣保留。</span>
+            <span>🎯 <strong>已鎖定紅框標註！</strong>本次將針對<strong>紅框內部重繪</strong>；勾選「鎖定紅框外」時，框外像素由前端合成 100% 保留原圖。</span>
           </div>
           <div class="flex items-center gap-3">
             <button type="button" id="btnEraseMaskContent" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer">
@@ -713,6 +715,10 @@
             <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
               <input type="checkbox" id="chkFillMaskBounds" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
               <span>獨立填滿各紅框內部</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
+              <input type="checkbox" id="chkLockOutsideMask" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
+              <span>鎖定紅框外 (像素級保留)</span>
             </label>
           </div>
         </div>
@@ -962,6 +968,7 @@
     const btnClearQuickMask = document.getElementById('btnClearQuickMask');
     const maskActiveAlert = document.getElementById('maskActiveAlert');
     const chkFillMaskBounds = document.getElementById('chkFillMaskBounds');
+    const chkLockOutsideMask = document.getElementById('chkLockOutsideMask');
     const btnEraseMaskContent = document.getElementById('btnEraseMaskContent');
     const btnEraseMaskText = document.getElementById('btnEraseMaskText');
 
@@ -1587,7 +1594,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       });
     }
 
-    async function saveImageToDB(dataUrl, prompt, model, size) {
+    async function saveImageToDB(dataUrl, prompt, model, size, meta = {}) {
       try {
         const db = await openDB();
         const item = {
@@ -1595,6 +1602,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           prompt: prompt || '未命名圖卡',
           model: model || 'gpt-image-2.5',
           size: size || '864x1536',
+          basePrompt: meta.basePrompt || '',
+          edits: Array.isArray(meta.edits) ? meta.edits : [],
           timestamp: Date.now(),
           createdAt: new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' })
         };
@@ -1715,21 +1724,23 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           </div>
         `;
 
+        const loadHistoryItem = () => {
+          const [w, h] = (item.size || '864x1536').split('x').map(Number);
+          // 修正：舊版 btn-load 內的 w/h 未定義會直接拋錯；且不再把「[全圖微調] …」標題灌回生圖 Prompt
+          baseDesignPrompt = item.basePrompt || (item.edits && item.edits.length ? '' : (item.prompt || ''));
+          editHistory = Array.isArray(item.edits) ? [...item.edits] : [];
+          currentCanvasPrompt = baseDesignPrompt;
+          loadImageToCanvas(item.dataUrl, w, h, currentCanvasPrompt);
+          if (currentMode === 'generate' && baseDesignPrompt) inputPrompt.value = baseDesignPrompt;
+          showStatus('已將歷史圖卡重新加載至畫布！', 'info');
+        };
+
         card.querySelector('.btn-load').addEventListener('click', (e) => {
           e.stopPropagation();
-          currentCanvasPrompt = item.prompt || '';
-          loadImageToCanvas(item.dataUrl, w, h, currentCanvasPrompt);
-          inputPrompt.value = currentCanvasPrompt;
-          showStatus('已將歷史圖卡重新加載至畫布！', 'info');
+          loadHistoryItem();
         });
 
-        card.addEventListener('click', () => {
-          const [w, h] = (item.size || '864x1536').split('x').map(Number);
-          currentCanvasPrompt = item.prompt || '';
-          loadImageToCanvas(item.dataUrl, w, h, currentCanvasPrompt);
-          inputPrompt.value = currentCanvasPrompt;
-          showStatus('已將歷史圖卡重新加載至畫布！', 'info');
-        });
+        card.addEventListener('click', loadHistoryItem);
 
         card.querySelector('.btn-dl').addEventListener('click', (e) => {
           e.stopPropagation();
@@ -2260,7 +2271,20 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     tabRefine.addEventListener('click', () => switchMode('refine'));
     tabEdit.addEventListener('click', () => switchMode('edit'));
 
+    var generatePromptDraft = '';
     function switchMode(mode) {
+      const prevMode = currentMode;
+      if (prevMode === 'generate' && mode !== 'generate') {
+        generatePromptDraft = inputPrompt.value;
+        inputPrompt.value = '';
+      } else if (prevMode !== 'generate' && mode === 'generate') {
+        inputPrompt.value = generatePromptDraft || inputPrompt.value;
+      }
+      inputPrompt.placeholder = mode === 'generate'
+        ? '描述您想生成的圖卡、早安圖或主體場景...'
+        : (mode === 'refine'
+          ? '只寫「要改什麼」，一次一件事效果最好。\n例如：把主標題「高雄」改成「高雄市」，其他完全不動'
+          : '描述紅框內要變成什麼。例如：把紅框內的人物換成揮手的姿勢');
       currentMode = mode;
       const tabActive = "flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all bg-emerald-600 text-white shadow-md";
       const tabInactive = "flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
@@ -2461,7 +2485,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     });
 
     inputPrompt.addEventListener('input', () => {
-      currentCanvasPrompt = inputPrompt.value.trim();
+      // 只有在「全新生圖」模式下，輸入框才代表畫面設計 Prompt；修圖模式的輸入是「修改指令」，不可覆蓋設計上下文
+      if (currentMode === 'generate') currentCanvasPrompt = inputPrompt.value.trim();
     });
 
     selectModel.addEventListener('change', () => {
@@ -2632,6 +2657,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const dataUrl = evt.target.result;
         const localPrompt = '本機圖片: ' + file.name;
         currentCanvasPrompt = localPrompt;
+        baseDesignPrompt = '';
+        editHistory = [];
         loadImageToCanvas(dataUrl, undefined, undefined, localPrompt);
         await saveImageToDB(dataUrl, localPrompt, 'local', `${originalNativeW}x${originalNativeH}`);
         refreshGalleryFromDB();
@@ -2673,20 +2700,254 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       }
     });
 
-    // 自動尺寸校準（符合 OpenAI GPT Image 2.5 必須為 16 倍數原則；或 DALL-E 3 固定規範）
-    function getValidOpenAISize(sizeStr, model) {
+    // -------------------------------------------------------------
+    // 12.9 API 尺寸規範與修圖核心工具 (v2)
+    // 規範：寬高皆為 16 倍數、最長邊 ≤ 3840、比例介於 1:3 ~ 3:1、總像素 655,360 ~ 8,294,400
+    // -------------------------------------------------------------
+    const API_MIN_PIXELS = 655360;
+    const API_MAX_PIXELS = 8294400;
+    const API_MAX_EDGE = 3840;
+    var baseDesignPrompt = '';   // 原始設計 Prompt（修圖時不再被包裝字串污染）
+    var editHistory = [];        // 此畫布累積的修圖指令（僅作紀錄，不會重送給模型）
+    const unsupportedEditParams = new Set();
+
+    function fitApiSize(w, h) {
+      if (!w || !h) return [1024, 1024];
+      const ratio = Math.min(3, Math.max(1 / 3, w / h));
+      const pixels = Math.min(API_MAX_PIXELS, Math.max(API_MIN_PIXELS, w * h));
+      let W = Math.sqrt(pixels * ratio);
+      let H = W / ratio;
+      const edgeScale = Math.min(1, API_MAX_EDGE / Math.max(W, H));
+      W = Math.max(16, Math.round((W * edgeScale) / 16) * 16);
+      H = Math.max(16, Math.round((H * edgeScale) / 16) * 16);
+      let guard = 0;
+      while (W * H < API_MIN_PIXELS && guard++ < 300) { W += 16; H = Math.max(16, Math.round(W / ratio / 16) * 16); }
+      guard = 0;
+      while ((W > API_MAX_EDGE || H > API_MAX_EDGE || W * H > API_MAX_PIXELS) && guard++ < 400) { W -= 16; H = Math.max(16, Math.round(W / ratio / 16) * 16); }
+      return [W, H];
+    }
+
+    function getValidOpenAISize(sizeStr) {
       if (!sizeStr) return '1024x1024';
-      if (model === 'dall-e-3') {
-        if (sizeStr === '1024x1024') return '1024x1024';
-        const [w, h] = sizeStr.split('x').map(Number);
-        return (w && h && w >= h) ? '1792x1024' : '1024x1792';
-      }
-      // GPT Image 2.5 系列 (flare / sunburst)：寬高必須為 16 的整數倍數 (例: 1080 -> 1088)
       const [w, h] = sizeStr.split('x').map(Number);
-      if (!w || !h) return '1024x1024';
-      const validW = Math.max(480, Math.min(3840, Math.round(w / 16) * 16));
-      const validH = Math.max(480, Math.min(3840, Math.round(h / 16) * 16));
-      return `${validW}x${validH}`;
+      const [W, H] = fitApiSize(w, h);
+      return `${W}x${H}`;
+    }
+
+    function normalizeQuality(model, q) {
+      if (!q || q === 'auto') return null;
+      if ((q === 'xhigh' || q === 'max') && !model.startsWith('gpt-image-2.5')) return 'high';
+      return q;
+    }
+
+    function loadImageEl(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('圖片載入失敗'));
+        img.src = src;
+      });
+    }
+
+    async function drawToCanvas(src, W, H, smooth = true) {
+      const img = (src instanceof HTMLCanvasElement || src instanceof HTMLImageElement) ? src : await loadImageEl(src);
+      const c = document.createElement('canvas');
+      c.width = W;
+      c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = smooth;
+      if (smooth) ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, W, H);
+      return c;
+    }
+
+    function canvasToBlob(c, type = 'image/png') {
+      return new Promise(res => c.toBlob(res, type));
+    }
+
+    // 抽出指令中「」『』“”"" 內的文字，要求模型逐字呈現（中文字最常出錯的地方）
+    function extractQuotedText(text) {
+      const out = [];
+      const re = /[「『“"]([^」』”"]{1,80})[」』”"]/g;
+      let m;
+      while ((m = re.exec(text)) !== null) out.push(m[1]);
+      return [...new Set(out)];
+    }
+
+    // 修圖 Prompt：只送「這次要改什麼」＋保留規則。不再把整份生圖 Prompt 重送（那會讓模型整張重畫）
+    function buildEditPrompt(instruction, { hasMask }) {
+      const quoted = extractQuotedText(instruction);
+      const parts = [
+        'Edit the provided image. Apply ONLY the change described in the instruction below and nothing else.',
+        hasMask
+          ? 'Limit all changes to the transparent (masked) region of the mask. Everything outside the mask must stay exactly as it is.'
+          : "Everything the instruction does not mention must stay exactly the same: layout and composition, framing, every person's face, identity, expression, pose and clothing, colors, lighting, background, logos and graphic elements.",
+        'Any text in the image is Traditional Chinese. Keep every existing character exactly as it is (same wording, font, weight, size, color and position) unless the instruction explicitly asks to change that text. Do not add extra text, captions, watermarks or logos.',
+        '',
+        'Instruction (written by the user in Traditional Chinese):',
+        instruction.trim()
+      ];
+      if (quoted.length) {
+        parts.push('', 'Render these strings exactly, character for character, in Traditional Chinese: ' + quoted.map(q => `"${q}"`).join(', '));
+      }
+      return parts.join('\n');
+    }
+
+    // /v1/images/edits 呼叫：多圖使用 image[] 欄位；遇到模型不支援的選用參數會自動移除重送
+    async function callImagesEdit(apiKey, { images, mask, prompt, model, size, quality }) {
+      const optional = {
+        quality: normalizeQuality(model, quality),
+        input_fidelity: 'high',
+        output_format: 'png'
+      };
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const fd = new FormData();
+        if (images.length === 1) {
+          fd.append('image', images[0], 'image.png');
+        } else {
+          images.forEach((b, i) => fd.append('image[]', b, `image_${i + 1}.png`));
+        }
+        if (mask) fd.append('mask', mask, 'mask.png');
+        fd.append('prompt', prompt);
+        fd.append('model', model);
+        fd.append('n', '1');
+        fd.append('size', size);
+        Object.entries(optional).forEach(([k, v]) => {
+          if (v && !unsupportedEditParams.has(`${model}:${k}`)) fd.append(k, v);
+        });
+
+        const response = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          body: fd
+        });
+        let data = {};
+        try { data = await response.json(); } catch (_) { /* 非 JSON 回應 */ }
+        if (response.ok) return data;
+
+        const msg = data.error?.message || `API 錯誤代碼: ${response.status}`;
+        const param = data.error?.param || '';
+        const rejected = Object.keys(optional).find(k =>
+          optional[k] && !unsupportedEditParams.has(`${model}:${k}`) && (param === k || msg.includes(k)));
+        if (response.status === 400 && rejected) {
+          console.warn(`模型 ${model} 不接受參數 ${rejected}，自動移除後重送：`, msg);
+          unsupportedEditParams.add(`${model}:${rejected}`);
+          continue;
+        }
+        if (response.status === 400 && !mask && (param === 'mask' || /mask|遮罩/i.test(msg))) {
+          console.warn('API/代理提示缺少 mask，自動生成全透明遮罩重送：', msg);
+          const [w, h] = size.split('x').map(Number);
+          const tc = document.createElement('canvas');
+          tc.width = w; tc.height = h;
+          mask = await canvasToBlob(tc);
+          continue;
+        }
+        const err = new Error(msg);
+        err.status = response.status;
+        err.param = param;
+        throw err;
+      }
+      throw new Error('API 參數相容性重試次數已達上限');
+    }
+
+    async function resultToDataUrl(data) {
+      const d = data?.data?.[0];
+      if (!d) throw new Error('API 未回傳圖片資料');
+      return ensureDataUrl(d.b64_json ? `data:image/png;base64,${d.b64_json}` : d.url);
+    }
+
+    // GPT Image 的遮罩只是「提示」，模型實際上會整張重算。這裡把紅框外區域用原圖像素貼回（邊緣柔化），確保框外絕不變動
+    async function compositeInsideMask(originalSrc, resultSrc, editRegionCanvas, W, H) {
+      const out = await drawToCanvas(resultSrc, W, H);
+      const soft = document.createElement('canvas');
+      soft.width = W;
+      soft.height = H;
+      const sctx = soft.getContext('2d');
+      const feather = Math.max(2, Math.round(Math.min(W, H) * 0.006));
+      if ('filter' in sctx) {
+        sctx.filter = `blur(${feather}px)`;
+        sctx.drawImage(editRegionCanvas, 0, 0, W, H);
+        sctx.filter = 'none';
+      }
+      sctx.drawImage(editRegionCanvas, 0, 0, W, H);
+
+      const octx = out.getContext('2d');
+      octx.globalCompositeOperation = 'destination-in';
+      octx.drawImage(soft, 0, 0);
+      octx.globalCompositeOperation = 'destination-over';
+      const orig = await loadImageEl(originalSrc);
+      octx.drawImage(orig, 0, 0, W, H);
+      octx.globalCompositeOperation = 'source-over';
+      return out.toDataURL('image/png');
+    }
+
+    // 統一的修圖流程（全圖修改 / 紅框修改 / 無痕抹除）
+    async function runImageEdit(apiKey, instruction, { requireMask = false, rawPrompt = null, label = '' } = {}) {
+      if (!currentImageObj) {
+        showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
+        return false;
+      }
+      if (!instruction || !instruction.trim()) {
+        showStatus('請先輸入修改指令！', 'error');
+        return false;
+      }
+
+      const nativeW = originalNativeW;
+      const nativeH = originalNativeH;
+      const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-sunburst';
+
+      setLoading(true, '正在準備畫布與遮罩...');
+      try {
+        const exp = await prepareCanvasExportWithMask();
+        if (requireMask && !exp.hasMask) {
+          showStatus('請先在畫布上拉出紅框或使用筆刷塗抹標註要修改的區域！', 'error');
+          return false;
+        }
+
+        // 底圖與遮罩一律縮放到同一個合法 API 尺寸（修正：本機上傳的非 16 倍數照片會被 API 拒絕或變形）
+        const [W, H] = fitApiSize(nativeW, nativeH);
+        const size = `${W}x${H}`;
+        const baseForApi = await canvasToBlob(await drawToCanvas(exp.baseDataUrl, W, H));
+        const maskForApi = exp.hasMask ? await canvasToBlob(await drawToCanvas(exp.maskCanvas, W, H, false)) : null;
+        const prompt = rawPrompt || buildEditPrompt(instruction, { hasMask: exp.hasMask });
+
+        setLoading(true, exp.hasMask
+          ? `正在修改紅框區域（覆蓋約 ${exp.maskCoveragePercent}%）...`
+          : '正在依指令修改全圖...');
+
+        const data = await callImagesEdit(apiKey, {
+          images: [baseForApi], mask: maskForApi, prompt, model, size, quality: selectQuality.value
+        });
+        let resultUrl = await resultToDataUrl(data);
+
+        const lockOutside = exp.hasMask && (chkLockOutsideMask ? chkLockOutsideMask.checked : true);
+        if (lockOutside) {
+          resultUrl = await compositeInsideMask(exp.baseDataUrl, resultUrl, exp.editRegionCanvas, nativeW, nativeH);
+        }
+
+        clearMaskPaths();
+        editHistory.push(instruction.trim());
+        loadImageToCanvas(resultUrl, nativeW, nativeH, currentCanvasPrompt);
+
+        const title = (label || (exp.hasMask ? `[紅框修改 ${exp.maskCoveragePercent}%] ` : '[全圖修改] ')) + instruction.trim();
+        await saveImageToDB(resultUrl, title, model, `${nativeW}x${nativeH}`, { basePrompt: baseDesignPrompt, edits: [...editHistory] });
+        refreshGalleryFromDB();
+
+        if (chkAutoDownload.checked) {
+          triggerAutoDownload(resultUrl, instruction);
+        }
+
+        showStatus(exp.hasMask
+          ? `✨ 紅框區域修改完成（覆蓋約 ${exp.maskCoveragePercent}%${lockOutside ? '，框外已像素鎖定' : ''}），已存入歷史庫`
+          : '✨ 全圖修改完成！已存入歷史庫', 'success');
+        return true;
+      } catch (err) {
+        console.error('修圖失敗:', err);
+        showStatus(`❌ 修改失敗：${err.message}`, 'error');
+        return false;
+      } finally {
+        setLoading(false);
+      }
     }
 
     // 13.1 純文字生圖
@@ -2694,7 +2955,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
       try {
         const model = selectModel.value;
-        const size = getValidOpenAISize(selectResolution.value, model);
+        const size = getValidOpenAISize(selectResolution.value);
         const quality = selectQuality.value;
         const background = selectBackground.value;
         const format = selectFormat.value;
@@ -2707,11 +2968,12 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           output_format: format
         };
 
-        if (model.startsWith('gpt-image-2.5')) {
-          payload.quality = quality;
+        if (model.startsWith('gpt-image')) {
+          const q = normalizeQuality(model, quality);
+          if (q) payload.quality = q;
           payload.background = background;
-        } else if (model === 'dall-e-3') {
-          payload.quality = (quality === 'low' || quality === 'auto') ? 'standard' : 'hd';
+          // 修正：透明背景不能搭配 JPEG，自動改 PNG
+          if (background === 'transparent' && payload.output_format === 'jpeg') payload.output_format = 'png';
         }
 
         const response = await fetch('https://api.openai.com/v1/images/generations', {
@@ -2731,7 +2993,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const imgData = data.data[0];
         let rawUrl = '';
         if (imgData.b64_json) {
-          rawUrl = `data:image/${format};base64,${imgData.b64_json}`;
+          rawUrl = `data:image/${payload.output_format};base64,${imgData.b64_json}`;
         } else if (imgData.url) {
           rawUrl = imgData.url;
         }
@@ -2739,9 +3001,11 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const permanentDataUrl = await ensureDataUrl(rawUrl);
         const [w, h] = size.split('x').map(Number);
         currentCanvasPrompt = prompt;
+        baseDesignPrompt = prompt;
+        editHistory = [];
         loadImageToCanvas(permanentDataUrl, w, h, prompt);
 
-        await saveImageToDB(permanentDataUrl, prompt, model, size);
+        await saveImageToDB(permanentDataUrl, prompt, model, size, { basePrompt: prompt, edits: [] });
         refreshGalleryFromDB();
 
         if (chkAutoDownload.checked) {
@@ -2763,94 +3027,53 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         showStatus('尚未上傳任何參考素材！', 'error');
         return;
       }
-      setLoading(true, `正在依據 ${referenceImages.length} 張素材透過 GPT Image 2.5 以圖生圖中...`);
+      setLoading(true, `正在依據 ${referenceImages.length} 張素材以圖生圖中...`);
       try {
-        const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-flare';
-        const size = getValidOpenAISize(selectResolution.value, model);
+        const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-flare';
+        const size = getValidOpenAISize(selectResolution.value);
         const [targetW, targetH] = size.split('x').map(Number);
         const sendMode = document.querySelector('input[name="refSendMode"]:checked')?.value || 'multi';
+        const quality = selectQuality.value;
 
-        let formData = new FormData();
+        const sendComposite = async () => {
+          const blob = await createCompositeReferenceBlob(referenceImages, targetW, targetH);
+          if (!blob) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
+          return callImagesEdit(apiKey, { images: [blob], prompt, model, size, quality });
+        };
 
-        if (sendMode === 'composite' || referenceImages.length === 1) {
-          // 雙人並排合拼圖模式或單圖模式
-          const refBlob = referenceImages.length === 1 
-            ? await getPreparedBlobFromDataUrl(referenceImages[0].dataUrl)
-            : await createCompositeReferenceBlob(referenceImages, targetW, targetH);
-
-          if (!refBlob) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
-          formData.append('image', refBlob, 'reference.png');
+        let data;
+        if (sendMode === 'composite' && referenceImages.length > 1) {
+          data = await sendComposite();
         } else {
-          // 原生多圖傳送模式 (GPT Image 2.5 edits 端點支援多個 image 欄位)
-          for (let i = 0; i < referenceImages.length; i++) {
-            const blob = await getPreparedBlobFromDataUrl(referenceImages[i].dataUrl);
-            if (blob) {
-              formData.append('image', blob, `ref_${i + 1}.png`);
+          const blobs = (await Promise.all(referenceImages.map(r => getPreparedBlobFromDataUrl(r.dataUrl)))).filter(Boolean);
+          if (blobs.length === 0) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
+          try {
+            // 修正：多圖必須用 image[] 欄位，舊版重複 append('image') 實際上只有一張被模型看到
+            data = await callImagesEdit(apiKey, { images: blobs, prompt, model, size, quality });
+          } catch (err) {
+            // 只有「圖片格式/數量」類錯誤才降級；額度、權限、內容審查錯誤直接回報，不重複扣費
+            if (blobs.length > 1 && err.status === 400 && /image/i.test(`${err.param} ${err.message}`)) {
+              showStatus('原生多圖未被接受，改以並排合拼圖重新送出...', 'info');
+              data = await sendComposite();
+            } else {
+              throw err;
             }
           }
         }
 
-        formData.append('prompt', prompt);
-        formData.append('model', model);
-        formData.append('n', '1');
-        formData.append('size', size);
-
-        let response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: formData
-        });
-
-        let data = await response.json();
-
-        // 智慧降級重試：若原生多圖模式被特定閘道或代理解析器拒絕，自動切換為「雙人並排合拼圖」模式重新發送
-        if (!response.ok && sendMode === 'multi' && referenceImages.length > 1) {
-          console.warn('原生多圖請求未通過，自動切換至「雙人並排合拼圖」模式重發...', data.error?.message);
-          showStatus('正在自動以「雙人並排合拼圖」模式重新送出...', 'info');
-
-          const compositeBlob = await createCompositeReferenceBlob(referenceImages, targetW, targetH);
-          const fallbackFormData = new FormData();
-          fallbackFormData.append('image', compositeBlob, 'composite_reference.png');
-          fallbackFormData.append('prompt', prompt);
-          fallbackFormData.append('model', model);
-          fallbackFormData.append('n', '1');
-          fallbackFormData.append('size', size);
-
-          response = await fetch('https://api.openai.com/v1/images/edits', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: fallbackFormData
-          });
-          data = await response.json();
-        }
-
-        if (!response.ok) {
-          throw new Error(data.error?.message || `以圖生圖失敗，API 代碼: ${response.status}`);
-        }
-
-        const imgData = data.data[0];
-        let rawUrl = '';
-        if (imgData.b64_json) {
-          rawUrl = `data:image/png;base64,${imgData.b64_json}`;
-        } else if (imgData.url) {
-          rawUrl = imgData.url;
-        }
-
-        const permanentDataUrl = await ensureDataUrl(rawUrl);
+        const permanentDataUrl = await resultToDataUrl(data);
         currentCanvasPrompt = prompt;
+        baseDesignPrompt = prompt;
+        editHistory = [];
         loadImageToCanvas(permanentDataUrl, targetW, targetH, prompt);
-        await saveImageToDB(permanentDataUrl, `[多圖以圖生圖 ×${referenceImages.length}] ` + prompt, model, size);
+        await saveImageToDB(permanentDataUrl, `[多圖以圖生圖 ×${referenceImages.length}] ` + prompt, model, size, { basePrompt: prompt, edits: [] });
         refreshGalleryFromDB();
 
         if (chkAutoDownload.checked) {
           triggerAutoDownload(permanentDataUrl, prompt);
         }
 
-        showStatus(`✨ 多圖以圖生圖成功！已融合 ${referenceImages.length} 張素材進行創作`, 'success');
+        showStatus(`✨ 以圖生圖成功！已融合 ${referenceImages.length} 張素材`, 'success');
       } catch (err) {
         console.error('以圖生圖失敗:', err);
         showStatus(`❌ 以圖生圖失敗：${err.message}`, 'error');
@@ -2888,6 +3111,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
       let maskBlob = null;
       let maskCoveragePercent = 0;
+      let maskCanvasOut = null;
+      let editRegionCanvas = null;
 
       if (hasMask) {
         // 2. 取得純遮罩圖層 (只顯示 isMaskPath 遮罩物件，隱藏主圖與其他文字圖層)
@@ -2967,6 +3192,18 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
         maskCtx.putImageData(imgData, 0, 0);
         maskBlob = await new Promise(res => maskCanvas.toBlob(res, 'image/png'));
+        maskCanvasOut = maskCanvas;
+
+        // 可編輯區（白色不透明）供前端合成：鎖定紅框外像素
+        editRegionCanvas = document.createElement('canvas');
+        editRegionCanvas.width = nativeW;
+        editRegionCanvas.height = nativeH;
+        const erCtx = editRegionCanvas.getContext('2d');
+        erCtx.fillStyle = '#ffffff';
+        erCtx.fillRect(0, 0, nativeW, nativeH);
+        erCtx.globalCompositeOperation = 'destination-out';
+        erCtx.drawImage(maskCanvas, 0, 0);
+        erCtx.globalCompositeOperation = 'source-over';
         maskCoveragePercent = ((transparentCount / totalPixels) * 100).toFixed(1);
       }
 
@@ -2979,204 +3216,42 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
       return {
         baseBlob,
+        baseDataUrl,
         maskBlob,
+        maskCanvas: maskCanvasOut,
+        editRegionCanvas,
         hasMask: hasMask && maskCoveragePercent > 0,
         maskCoveragePercent
       };
     }
 
-    // 局部遮罩修圖
+    // 局部遮罩修圖（統一走 runImageEdit）
     async function executeInpaint(apiKey, prompt) {
-      if (!currentImageObj) {
-        showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
-        return;
-      }
-
-      const maskObjects = canvas.getObjects().filter(o => o.isMaskPath);
-      if (maskObjects.length === 0) {
-        showStatus('請先在畫布上拉出紅框或使用筆刷塗抹標註要修改的區域！', 'error');
-        return;
-      }
-
-      setLoading(true, '正在合成精確遮罩並送至 OpenAI 進行局部重繪...');
-      try {
-        const nativeW = originalNativeW;
-        const nativeH = originalNativeH;
-        const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-sunburst';
-
-        const { baseBlob, maskBlob, hasMask, maskCoveragePercent } = await prepareCanvasExportWithMask();
-        if (!hasMask || !maskBlob) {
-          throw new Error('未能在畫布上擷取到有效遮罩，請重新拉出紅框或塗抹！');
-        }
-
-        const validInpaintSize = getValidOpenAISize(`${nativeW}x${nativeH}`, model);
-        const formData = new FormData();
-        formData.append('image', baseBlob, 'image.png');
-        formData.append('mask', maskBlob, 'mask.png');
-        formData.append('prompt', prompt);
-        formData.append('model', model);
-        formData.append('n', '1');
-        formData.append('size', validInpaintSize);
-
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${apiKey}` },
-          body: formData
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error?.message || `修圖 API 錯誤: ${response.status}`);
-        }
-
-        const imgData = data.data[0];
-        const rawUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
-        const permanentDataUrl = await ensureDataUrl(rawUrl);
-
-        clearMaskPaths();
-        loadImageToCanvas(permanentDataUrl, nativeW, nativeH, currentCanvasPrompt);
-
-        const isErase = prompt.includes('Seamlessly erase') || prompt.includes('消除紅框');
-        const recordTitle = isErase ? `[無痕抹除紅框內容 ×${maskCoveragePercent}%]` : '[局部重繪] ' + prompt;
-        await saveImageToDB(permanentDataUrl, recordTitle, model, `${nativeW}x${nativeH}`);
-        refreshGalleryFromDB();
-
-        if (chkAutoDownload.checked) {
-          triggerAutoDownload(permanentDataUrl, prompt);
-        }
-
-        showStatus(isErase ? `✨ 紅框內容已無痕抹除！(覆蓋約 ${maskCoveragePercent}%) 乾淨底色已更新並存入歷史庫` : `✨ 局部重繪修圖完成！(覆蓋約 ${maskCoveragePercent}%) 已自動保存至本機資料庫`, 'success');
-      } catch (err) {
-        console.error('修圖失敗:', err);
-        showStatus(`❌ 局部重繪失敗：${err.message}`, 'error');
-      } finally {
-        setLoading(false);
-      }
+      return runImageEdit(apiKey, prompt, { requireMask: true });
     }
 
     // -------------------------------------------------------------
-    // 13.4 全圖微調 ＆ 畫布補充修正 (自動相容紅框局部修改與全圖整體微調)
+    // 13.4 全圖修改 ＆ 補充修正（有紅框自動轉為紅框修改）
+    // 舊版問題：每次修正都把「原始 Prompt + 上次包裝字串」再包一層送出，
+    // 幾輪後 Prompt 變成層層巢狀的長文，模型只會照原始設計整張重畫，完全忽略這次的小修改。
     // -------------------------------------------------------------
     async function executeGlobalRefine(apiKey, refinePrompt) {
-      if (!currentImageObj) {
-        showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
-        return;
-      }
-
       if (!refinePrompt || !refinePrompt.trim()) {
-        showStatus('請先輸入整體修正需求提示詞！', 'error');
+        showStatus('請先輸入修改指令！', 'error');
         if (inputQuickRefine) inputQuickRefine.focus();
         return;
       }
-
-      setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 進行微調修正...');
       if (btnExecuteQuickRefine) {
         btnExecuteQuickRefine.disabled = true;
         btnQuickRefineText.innerText = '修正中...';
       }
-
       try {
-        const nativeW = originalNativeW;
-        const nativeH = originalNativeH;
-        const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-sunburst';
-
-        const { baseBlob, maskBlob, hasMask, maskCoveragePercent } = await prepareCanvasExportWithMask();
-        const validSize = getValidOpenAISize(`${nativeW}x${nativeH}`, model);
-
-        // 核心修正：完整保留主圖既有內容與文案上下文，絕不發送 context-free 的孤立短句！
-        const baseContext = currentCanvasPrompt || inputPrompt.value.trim();
-        let promptToSend = refinePrompt.trim();
-
-        if (baseContext && baseContext !== promptToSend) {
-          // 組合原圖完整設計上下文與增量修正指示，徹底防止模型因 context-free 自由妄想產生股票理財等無關文字
-          promptToSend = `[畫面原始核心設計與完整文案 Context (必須嚴格遵照保留，嚴禁擅自改編或遺漏)]:\n${baseContext}\n\n[使用者本次具體微調指示 User Specific Edits]:\n${promptToSend}\n\n[嚴格限制]: 請務必維持本圖的主題風格與視覺調性，文字排版僅能依據上述既有文案進行調整，嚴禁無中生有生成任何與主旨無關之股票、美股、理財或無關廣告文案。`;
+        const ok = await runImageEdit(apiKey, refinePrompt);
+        if (ok && inputQuickRefine && inputQuickRefine.value.trim() === refinePrompt.trim()) {
+          inputQuickRefine.value = '';
+          autoResizeQuickRefine();
         }
-
-        const formData = new FormData();
-        formData.append('image', baseBlob, 'canvas_image.png');
-        formData.append('prompt', promptToSend);
-        formData.append('model', model);
-        formData.append('n', '1');
-        formData.append('size', validSize);
-
-        if (hasMask && maskBlob) {
-          // 自動附加紅框遮罩進行局部精確重繪
-          formData.append('mask', maskBlob, 'mask.png');
-          const isLayoutIntent = /第一句|第二句|排版|順序|換行|放上|放下|位置|上下顛倒/.test(refinePrompt);
-          if (isLayoutIntent) {
-            showStatus(`🎯 正在局部重繪紅框區（覆蓋約 ${maskCoveragePercent}%）。💡 提示：若需重新排列未被紅框圈選的中間文字，請先點擊【清除紅框遮罩】後送出全圖微調！`, 'info');
-          } else {
-            showStatus(`🎯 已成功偵測到紅框遮罩（覆蓋約 ${maskCoveragePercent}%），正在送出局部精準重繪...`, 'info');
-          }
-        } else {
-          showStatus('✨ 未偵測到紅框遮罩，正在送出全圖整體微調...', 'info');
-        }
-
-        let response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: formData
-        });
-
-        let data = await response.json();
-
-        // 智慧相容重試：若特定代理伺服器或網關在無遮罩時強制要求 mask 欄位，自動帶入全透明遮罩重試
-        if (!response.ok && !hasMask && data.error?.message && (data.error.message.toLowerCase().includes('mask') || data.error.message.includes('遮罩'))) {
-          console.warn('API 提示缺少 mask，自動生成全畫布透明遮罩重新發送...', data.error.message);
-          showStatus('正在自動以全畫布透明遮罩格式送出微調...', 'info');
-
-          const tCanvas = document.createElement('canvas');
-          tCanvas.width = nativeW;
-          tCanvas.height = nativeH;
-          const tBlob = await new Promise(res => tCanvas.toBlob(res, 'image/png'));
-
-          const retryFormData = new FormData();
-          retryFormData.append('image', baseBlob, 'canvas_image.png');
-          retryFormData.append('mask', tBlob, 'mask.png');
-          retryFormData.append('prompt', promptToSend);
-          retryFormData.append('model', model);
-          retryFormData.append('n', '1');
-          retryFormData.append('size', validSize);
-
-          response = await fetch('https://api.openai.com/v1/images/edits', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: retryFormData
-          });
-          data = await response.json();
-        }
-
-        if (!response.ok) {
-          throw new Error(data.error?.message || `修正失敗，API 代碼: ${response.status}`);
-        }
-
-        const imgData = data.data[0];
-        const rawUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
-        const permanentDataUrl = await ensureDataUrl(rawUrl);
-
-        clearMaskPaths();
-        loadImageToCanvas(permanentDataUrl, nativeW, nativeH, promptToSend);
-        inputPrompt.value = promptToSend;
-
-        const recordTitle = hasMask ? `[紅框局部修正 ×${maskCoveragePercent}%] ` + refinePrompt : '[全圖微調] ' + refinePrompt;
-        await saveImageToDB(permanentDataUrl, recordTitle, model, `${nativeW}x${nativeH}`);
-        refreshGalleryFromDB();
-
-        if (chkAutoDownload.checked) {
-          triggerAutoDownload(permanentDataUrl, refinePrompt);
-        }
-
-        showStatus(hasMask ? `✨ 紅框標註區域已成功精準修改！(覆蓋約 ${maskCoveragePercent}%) 已存入歷史庫` : '✨ 全圖整體修正完成！新圖已更新並永久存入本機資料庫', 'success');
-
-      } catch (err) {
-        console.error('微調修圖失敗:', err);
-        showStatus(`❌ 修正失敗：${err.message}`, 'error');
       } finally {
-        setLoading(false);
         if (btnExecuteQuickRefine) {
           btnExecuteQuickRefine.disabled = false;
           btnQuickRefineText.innerText = '立即修正';
@@ -3227,7 +3302,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
         try {
           const erasePrompt = "Seamlessly erase and remove all text, badges, banners, logos, borders, stars, and decorative symbols inside the masked region. Seamlessly restore and blend with the surrounding clean background color, smooth texture, and lighting gradient. Keep the masked region completely clean, empty, spotless, and perfectly continuous with the adjacent unmasked image. No text, no letters, no icons, completely spotless.";
-          await executeInpaint(apiKey, erasePrompt);
+          await runImageEdit(apiKey, '消除紅框內所有內容，還原乾淨背景', { requireMask: true, rawPrompt: erasePrompt, label: '[無痕抹除] ' });
         } finally {
           btnEraseMaskContent.disabled = false;
           if (btnEraseMaskText) btnEraseMaskText.innerText = '🧹 消除紅框內容 (無痕抹除)';
@@ -3268,7 +3343,6 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         if (!addition) return;
         const current = inputQuickRefine.value.trim();
         inputQuickRefine.value = current ? `${current}\n- ${addition}` : `- ${addition}`;
-        inputPrompt.value = inputQuickRefine.value;
         autoResizeQuickRefine();
         inputQuickRefine.focus();
       });
