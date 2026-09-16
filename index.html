@@ -94,7 +94,7 @@
             GPT Image 2.5 視覺創作與圖像修復工作台
           </h1>
           <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 施政圖卡 & 政治攻防深度 Prompt ‧ 以圖生圖
+            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 施政圖卡、政治攻防 & 2026選戰深度 Prompt ‧ 以圖生圖
           </p>
         </div>
       </div>
@@ -228,37 +228,57 @@
             <span class="text-[10px] text-slate-400">點選自動套用</span>
           </div>
 
-          <!-- 兩個 .md 模式快捷切換按鈕 -->
-          <div class="grid grid-cols-2 gap-2">
+          <!-- 三個 .md 模式快捷切換按鈕 -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <!-- 模式 1：官方高質感施政圖卡 (policy-infographics) -->
             <button type="button" id="btnModePolicy" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-500 text-left transition-all group flex flex-col gap-1 shadow-sm">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 flex items-center gap-1">
-                  🏛️ 官方施政圖卡
+                  🏛️ 官方施政
                 </span>
                 <span id="dotPolicy" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">重大建設/半屏融圖/六都評比</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">重大建設/半屏融圖/評比</p>
             </button>
 
             <!-- 模式 2：政治攻防與事實澄清 (political-meme) -->
             <button type="button" id="btnModeMeme" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-rose-500 text-left transition-all group flex flex-col gap-1 shadow-sm">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-rose-500 flex items-center gap-1">
-                  ⚔️ 政治攻防澄清
+                  ⚔️ 攻防澄清
                 </span>
                 <span id="dotMeme" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">新聞打臉/迴旋鏢/雙標對比</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">新聞打臉/迴旋鏢/雙標</p>
+            </button>
+
+            <!-- 模式 3：2026 選戰專用圖卡 (campaign-card) -->
+            <button type="button" id="btnModeCampaign" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-amber-500 text-left transition-all group flex flex-col gap-1 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-500 flex items-center gap-1">
+                  🗳️ 2026選戰
+                </span>
+                <span id="dotCampaign" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">金句哲思/造勢壓字/背書</p>
             </button>
           </div>
 
-          <!-- 展開的版型子選單 -->
-          <div id="subTemplateBox" class="hidden flex flex-col gap-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-150">
+          <!-- 展開的版型子選單 (結構式向下開展) -->
+          <div id="subTemplateBox" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-150">
             <div class="flex items-center justify-between">
-              <span id="subTemplateLabel" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">切換版型範本：</span>
+              <span id="subTemplateLabel" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3 h-3"></i> 選擇版型模組：
+              </span>
               <button type="button" id="btnResetMode" class="text-[10px] text-slate-400 hover:text-rose-500 transition-colors">恢復自由輸入</button>
             </div>
+
+            <!-- 快速點選膠囊 (結構式向下開展，直覺一鍵切換) -->
+            <div id="subTemplatePills" class="flex flex-wrap gap-1.5">
+              <!-- 由 JS 動態依所選主模式渲染對應子模組膠囊按鈕 -->
+            </div>
+
+            <!-- 下拉選單備用相容 -->
             <select id="selectSubTemplate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
             </select>
           </div>
@@ -561,10 +581,11 @@
       
       <div class="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 兩大深度 Prompt 規範整合：</p>
-          <ul class="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
+          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 三大深度 Prompt 規範整合：</p>
+          <ul class="list-disc list-inside space-y-1.5 text-slate-600 dark:text-slate-400">
             <li><strong>🏛️ 官方施政圖卡 (policy-infographics)</strong>：自動套用 16:9 簡報大景、科技深藍/翡翠綠漸層背景、白金雙色主標題、圓形勾選框與純淨無雜質規範。</li>
             <li><strong>⚔️ 政治攻防澄清 (political-meme)</strong>：自動套用 1:1 黃金方型、新聞截圖鐵證打臉、尷尬表情迴旋鏢、2-1 卡片與紅字畫重點。</li>
+            <li><strong>🗳️ 2026 選戰專用圖卡 (campaign-card)</strong>：萃取自《選戰專用圖卡.md》，提供「純文字哲思金句」、「造勢現場滿版壓字」、「雙首長合體形象背書」三大核心模組。</li>
           </ul>
         </div>
 
@@ -632,9 +653,13 @@
     // 深度 Prompt 模式元素
     const btnModePolicy = document.getElementById('btnModePolicy');
     const btnModeMeme = document.getElementById('btnModeMeme');
+    const btnModeCampaign = document.getElementById('btnModeCampaign');
     const dotPolicy = document.getElementById('dotPolicy');
     const dotMeme = document.getElementById('dotMeme');
+    const dotCampaign = document.getElementById('dotCampaign');
     const subTemplateBox = document.getElementById('subTemplateBox');
+    const subTemplatePills = document.getElementById('subTemplatePills');
+    const subTemplateLabel = document.getElementById('subTemplateLabel');
     const selectSubTemplate = document.getElementById('selectSubTemplate');
     const btnResetMode = document.getElementById('btnResetMode');
 
@@ -701,48 +726,117 @@
     const btnCloseHelpModal = document.getElementById('btnCloseHelpModal');
 
     // -------------------------------------------------------------
-    // 2. 深度 Prompt 範本資料庫 (萃取自本地兩大 .md 規範)
+    // 2. 深度 Prompt 範本資料庫 (萃取自本地三大 .md 規範)
     // -------------------------------------------------------------
     const SKILL_TEMPLATES = {
       policy: {
         name: '官方高質感施政圖卡 (policy-infographics)',
+        themeColor: 'emerald',
         aspect: '1536x864', // 16:9
         options: [
           {
             title: '【重大建設】半屏實景融圖＋左側核心亮點 (16:9)',
+            shortTitle: '【重大建設】半屏融圖',
             prompt: 'A world-class municipal executive policy report presentation infographic slide in 16:9 widescreen format. Clean minimalist design with NO watermarks, NO corner stamps, and NO signatures. Master color scheme is modern deep royal navy blue gradient (#0A2540 to #1E3A8A). Left side (55% width) features bold, clean typography: ultra-large bold heavy gothic headline in pure white and luminous golden yellow (#FACC15): "產業轉型 ‧ 從賽馬場到晶圓廠". Below headline, 3 highlight bullet points with yellow circular checkmarks (✔) in bright gold: "✔ 4年迎來台積電2奈米先進製程", "✔ 串聯半導體S廊帶打造完整生態系", "✔ 招商投資突破8,000億元創造6萬高薪就業". Key numbers magnified 2.5x in glowing gold. Right side (45% width) showcases authentic high-definition infrastructure photography of modern high-tech semiconductor plant, smoothly fading into the left blue background. Sharp typography, corporate executive presentation perfection, 8k resolution.'
           },
           {
             title: '【地標活動】全屏大景空拍＋下緣漸層資訊帶 (16:9)',
+            shortTitle: '【地標活動】全屏空拍',
             prompt: 'A breathtaking municipal policy briefing presentation infographic in 16:9 aspect ratio. Clean aesthetic with NO corner text, NO watermarks. Full-bleed background is an authentic high-resolution aerial photograph of a massive stadium concert at night, filled with 50,000 glowing lightsticks and vibrant stage lights. Bottom 40% has a smooth deep indigo-navy gradient scrim overlay (#1E1B4B to #312E81). Across lower third, giant heavy gothic title in bold white and warm amber: "演唱會經濟 擦亮城市品牌". Neatly arranged bullet points below with yellow checkmark badges: "✔ 吸引逾 300 萬觀光人次", "✔ 創造逾 100 億元 觀光經濟產值", "✔ 平均疏運時間大幅縮短至 60 分鐘". Sharp focus, clean infographic overlay, aesthetic layout, 8k resolution.'
           },
           {
             title: '【施政數據】綠色系六都評比柱狀圖與評比 (16:9)',
+            shortTitle: '【施政數據】六都評比',
             prompt: 'A world-class government statistical infographic slide in 16:9 widescreen ratio. Deep emerald forest green color palette (#059669 to #064E3B). Left side features a huge bold headline: "穩健財政 支撐城市建設", with summary bullet points. Right side shows a clean 6-city comparative horizontal bar chart where the featured city is highlighted in glowing luminous yellow with a badge "六都第一", while other bars are subtle muted slate gray. A prominent bold neon trend arrow indicating "連續零舉借 累計還債逾百億 ▲". Clean, sharp corporate executive aesthetic, zero watermarks, 8k resolution.'
           }
         ]
       },
       meme: {
         name: '政治攻防與事實澄清 (political-meme-generator)',
+        themeColor: 'rose',
         aspect: '1024x1024', // 1:1
         options: [
           {
             title: '【新聞打臉】新聞截圖鐵證＋迴旋鏢卡 (1:1)',
+            shortTitle: '【新聞打臉】鐵證迴旋鏢',
             prompt: 'A high-impact official Taiwanese political counter-attack infographic graphic image in perfect 1:1 square ratio. Top header in bold yellow text: "【鐵證如山】事實查證 責任源頭真相大白！". Middle section: Left side features an authentic news report screenshot layout with media badge. Right side features a photorealistic portrait of the political opponent with an AWKWARD, EMBARRASSED, flustered expression, with a glowing boomerang hitting them. Below image section, 3 text cards arranged neatly in a 2-1 layout with key terms highlighted in bold RED text: 1. "☑ 對手急著抹黑帶風向 ➔ 結果迴旋鏢打自己！", 2. "☑ 官方數據鐵證公開 ➔ 責任歸屬清清楚楚！", 3. "☑ 烏龍指控不攻自破 ➔ 市民眼睛雪亮！". Bold red stamp reading "【源頭打臉】". Bottom yellow banner with BOLD LARGE black and red headline text. High contrast, clean typography, 8k resolution.'
           },
           {
             title: '【誠信視察】現場真實照片直接壓字澄清 (1:1)',
+            shortTitle: '【誠信視察】現場照片壓字',
             prompt: 'An authoritative official municipal inspection fact-check infographic in 1:1 square ratio. Background is an authentic, crisp documentary photograph of official government inspectors conducting rigorous on-site water quality and safety testing with professional equipment. Crisp bold white title at the top: "全面稽查 ‧ 守護市民健康". Floating frosted-glass badges with green checkmarks: "☑ 檢測結果全數合規", "☑ 24小時即時數據公開透明". A prominent official red circular seal stamped in the corner reading "【嚴格把關】". Professional, trustworthy, daylight lighting, clean graphic design, 8k resolution.'
           },
           {
             title: '【雙標檢驗】左右雙標對比型 (1:1)',
+            shortTitle: '【雙標檢驗】左右雙標對比',
             prompt: 'A dynamic split-screen political comparison graphic in 1:1 ratio. Left side (Blue tint) shows political opponents making excuses during crisis. Right side (Green tint) shows dedicated executive leadership working on the frontlines of disaster prevention. Center features a bold vertical dark dividing bar with text "市民看得很清楚". High contrast, jagged comparison speech bubbles, bold black and yellow headline banners, sharp documentary aesthetic, 8k resolution.'
+          }
+        ]
+      },
+      campaign: {
+        name: '2026 選戰專用圖卡 (campaign-card)',
+        themeColor: 'amber',
+        aspect: '1536x864', // 16:9
+        options: [
+          {
+            title: '模組 1：【純文字哲思／政策金句型】瑞士風排版＋雙字體亮點 (16:9)',
+            shortTitle: '【模組 1】哲思金句型',
+            prompt: '[Role & Context]:\nA world-class political campaign editorial statement typography slide in 16:9 widescreen format (1920x1080), designed with high-end modern Swiss style and minimalist poster aesthetics.\n\n[Color Palette Concept]:\n- Primary Background: Warm Coral Pink #FF6E6E with an extremely subtle, warm vertical vignette lighting gradient.\n- Typography Color: Crisp Pure White (#FFFFFF) for base text, paired with high-contrast Luminous Golden Yellow (#FFE600 / #FACC15) strictly highlighting the ultimate punchline words.\n- Decorative Accents: Semi-transparent white (15-25% opacity) for subtle geometric watermark.\n\n[Layout & Visual Hierarchy]:\n1. Top Category Pill Badge: Delicate translucent rounded capsule at top-left or top-center: "STATEMENT ｜ 堅持信念".\n2. Setup Pre-headline: Elegant, literary high-contrast Serif / Mingti typeface (明體/宋體), medium weight, graceful line spacing:\n   "在壓力最大的時候做出的決定，"\n   "才看得出一個人真正的信念在哪裡。"\n3. Central Divider: A razor-thin horizontal accent line (1-2px) anchored by a subtle diamond / geometric rhombus node in the exact center.\n4. Main Punchline (The Core Climax): Ultra-bold, massive modern Sans-Serif / Heavy Gothic typeface (超粗黑體) centered below:\n   "蘇巧慧，是" in Pure White, followed by "有信念、有堅持的人。" in glowing Luminous Yellow.\n5. Background Watermark: A giant, faint, semi-transparent decorative graphic (such as a 5-point star outline "★" or quotation mark "“") bleeding off the top-right corner.\n6. Universal Corner Branding:\n   - Bottom-Left: "2026 新北市長候選人 蘇巧慧" in crisp minimalist typography.\n   - Bottom-Right: "溫暖 創新 ｜ 會做事 NEW TAIPEI CITY" with official campaign lockup.\n\n[Style Specs]:\nClean vector sharpness, no visual clutter, perfectly balanced negative space, razor-sharp anti-aliased Chinese typography, 8k resolution.'
+          },
+          {
+            title: '模組 2：【熱血現場／造勢滿版壓字型】造勢紀實＋平行句對比 (16:9)',
+            shortTitle: '【模組 2】造勢滿版壓字',
+            prompt: '[Role & Context]:\nA high-energy, authentic political campaign photo-infographic in 16:9 widescreen format (1920x1080). Emotional, inspiring, and dynamic photojournalism aesthetic.\n\n[Visual Composition & Photography]:\n- Background: Full-bleed authentic documentary photography of a vibrant political rally. The candidate (蘇巧慧) and endorsing leader (陳其邁) stand side-by-side with microphones raised, pumped fists in the air, genuine enthusiastic smiles, surrounded by waving campaign flags and cheering supporters under natural stage / daylight lighting.\n- Depth & Scrim: Lower 35% features a smooth, translucent gradient scrim blending upward into Coral Pink (#FF6E6E) to provide crystal-clear contrast for typography.\n\n[Typography & Dynamic Headline]:\n- Bottom Left Anchor: Massive, ultra-heavy condensed gothic typography: "蘇巧慧" in giant pure white text.\n- Bottom Center / Right Rhythmic Comparison: Staggered parallel slogan layout:\n  Line 1: "比陳其邁更" in white + "緊緊緊" in huge glowing luminous yellow (#FFE600).\n  Line 2: "比蘇貞昌更" in white + "衝衝衝" in huge glowing luminous yellow (#FFE600).\n\n[Style Specs]:\nDocumentary photojournalism quality, high shutter speed action freeze, natural skin tones, zero AI plastic artifact, ultra-crisp heavy lettering, 8k resolution.'
+          },
+          {
+            title: '模組 3：【雙首長合體／高階背書形象型】雙首長對談背書 (16:9)',
+            shortTitle: '【模組 3】雙首長合體背書',
+            prompt: '[Role & Context]:\nA premium, executive campaign endorsement key visual in 16:9 widescreen format (1920x1080). Clean, modern, trustworthy studio portrait layout.\n\n[Visual Composition]:\n- Background: Solid clean background in Warm Coral Pink (#FF6E6E) with modern geometric accents and subtle horizontal motion bars at the bottom.\n- Portrait Subject: High-resolution studio portrait of 蘇巧慧 (female, smiling warmly, cream white professional blazer, arms crossed confidently) and 陳其邁 (male, dark navy tailored suit, glasses, confident and experienced demeanor, arms crossed).\n- Clean lighting: Soft studio rim lights, natural skin texture, razor-sharp edge cutout.\n\n[Graphic & Typography Details]:\n- Top-Left Corner: Official candidate endorsement lockup:\n  "2026 新北市長候選人" in small clean font above "蘇巧慧" in bold modern sans-serif.\n- Speech Bubble / Graphic Callout: Pointing gently from endorsing leader with a sleek speech arrow:\n  "高雄經驗 選對人 很重要！" in bold, friendly sans-serif typography.\n- Bottom Decorative Bars: Modern minimalist dual-layer horizontal stripe accents on lower left and right.\n\n[Style Specs]:\nProfessional executive branding, clean editorial layout, Leica camera portrait depth, commercial-grade color grading, 8k resolution.'
           }
         ]
       }
     };
 
-    let activeSkillMode = null; // 'policy' | 'meme' | null
+    let activeSkillMode = null; // 'policy' | 'meme' | 'campaign' | null
+    let activeSubIndex = 0;
+
+    function renderSubTemplatePills(modeKey, activeIdx) {
+      if (!subTemplatePills) return;
+      subTemplatePills.innerHTML = '';
+      const config = SKILL_TEMPLATES[modeKey];
+      if (!config) return;
+
+      config.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isSelected = idx === activeIdx;
+        let activeBgClass = 'bg-emerald-600 text-white';
+        if (modeKey === 'meme') activeBgClass = 'bg-rose-600 text-white';
+        if (modeKey === 'campaign') activeBgClass = 'bg-amber-600 text-white';
+
+        btn.className = isSelected
+          ? `px-2.5 py-1 text-xs rounded-lg font-bold ${activeBgClass} shadow-sm transition-all`
+          : 'px-2.5 py-1 text-xs rounded-lg font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400 transition-all';
+        btn.innerText = opt.shortTitle || opt.title;
+        btn.addEventListener('click', () => {
+          selectSubTemplate.value = idx;
+          applySubTemplate(idx);
+        });
+        subTemplatePills.appendChild(btn);
+      });
+    }
+
+    function applySubTemplate(idx) {
+      if (!activeSkillMode || !SKILL_TEMPLATES[activeSkillMode]) return;
+      activeSubIndex = idx;
+      const config = SKILL_TEMPLATES[activeSkillMode];
+      const item = config.options[idx];
+      if (item) {
+        inputPrompt.value = item.prompt;
+        renderSubTemplatePills(activeSkillMode, idx);
+        showStatus(`已載入：${item.title}`, 'info');
+      }
+    }
 
     function setSkillMode(modeKey) {
       if (activeSkillMode === modeKey) {
@@ -750,18 +844,35 @@
         return;
       }
       activeSkillMode = modeKey;
+      activeSubIndex = 0;
       const config = SKILL_TEMPLATES[modeKey];
 
+      // 重置所有模式按鈕外觀
+      btnModePolicy.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
+      dotPolicy.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
+      btnModeMeme.classList.remove('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
+      dotMeme.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
+      btnModeCampaign.classList.remove('border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/40');
+      dotCampaign.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
+      // 依當前模式套用高亮
       if (modeKey === 'policy') {
         btnModePolicy.classList.add('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
         dotPolicy.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-sm';
-        btnModeMeme.classList.remove('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
-        dotMeme.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
-      } else {
+        subTemplateLabel.className = 'text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1';
+        subTemplateLabel.innerHTML = '<i data-lucide="sparkles" class="w-3 h-3"></i> 選擇官方施政版型：';
+      } else if (modeKey === 'meme') {
         btnModeMeme.classList.add('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
         dotMeme.className = 'w-2 h-2 rounded-full bg-rose-500 shadow-sm';
-        btnModePolicy.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
-        dotPolicy.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+        subTemplateLabel.className = 'text-[11px] font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1';
+        subTemplateLabel.innerHTML = '<i data-lucide="sparkles" class="w-3 h-3"></i> 選擇政治攻防版型：';
+      } else if (modeKey === 'campaign') {
+        btnModeCampaign.classList.add('border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/40');
+        dotCampaign.className = 'w-2 h-2 rounded-full bg-amber-500 shadow-sm';
+        subTemplateLabel.className = 'text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1';
+        subTemplateLabel.innerHTML = '<i data-lucide="sparkles" class="w-3 h-3"></i> 選擇 2026 選戰版型：';
       }
 
       // 自動切換最佳比例
@@ -776,10 +887,14 @@
         selectSubTemplate.appendChild(optionEl);
       });
 
+      // 渲染結構式膠囊按鈕
+      renderSubTemplatePills(modeKey, 0);
+
       subTemplateBox.classList.remove('hidden');
 
       // 載入第一個模板 prompt
       inputPrompt.value = config.options[0].prompt;
+      if (window.lucide) lucide.createIcons();
       showStatus(`已載入【${config.name}】深度 Prompt 規範與推薦比例 (${config.aspect})`, 'success');
     }
 
@@ -787,25 +902,26 @@
       activeSkillMode = null;
       btnModePolicy.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
       dotPolicy.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
       btnModeMeme.classList.remove('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
       dotMeme.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
+      btnModeCampaign.classList.remove('border-amber-500', 'bg-amber-50/50', 'dark:bg-amber-950/40');
+      dotCampaign.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+
+      if (subTemplatePills) subTemplatePills.innerHTML = '';
       subTemplateBox.classList.add('hidden');
       showStatus('已退出深度模式，可自由輸入 Prompt', 'info');
     }
 
     btnModePolicy.addEventListener('click', () => setSkillMode('policy'));
     btnModeMeme.addEventListener('click', () => setSkillMode('meme'));
+    btnModeCampaign.addEventListener('click', () => setSkillMode('campaign'));
     btnResetMode.addEventListener('click', resetSkillMode);
 
     selectSubTemplate.addEventListener('change', (e) => {
-      if (activeSkillMode && SKILL_TEMPLATES[activeSkillMode]) {
-        const idx = parseInt(e.target.value, 10);
-        const item = SKILL_TEMPLATES[activeSkillMode].options[idx];
-        if (item) {
-          inputPrompt.value = item.prompt;
-          showStatus(`已切換為：${item.title}`, 'info');
-        }
-      }
+      const idx = parseInt(e.target.value, 10);
+      applySubTemplate(idx);
     });
 
     // -------------------------------------------------------------
