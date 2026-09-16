@@ -700,15 +700,21 @@
         </div>
 
         <!-- 紅框遮罩啟用中提示橫條 -->
-        <div id="maskActiveAlert" class="hidden p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-2 transition-all shadow-sm">
+        <div id="maskActiveAlert" class="hidden p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-2.5 transition-all shadow-sm">
           <div class="flex items-center gap-1.5 font-medium">
             <i data-lucide="target" class="w-4 h-4 text-rose-500 flex-shrink-0"></i>
-            <span>🎯 <strong>已鎖定畫布紅框/塗抹區！</strong>本次將針對<strong>紅框標註範圍精準重繪</strong>，其餘畫面保持不變。</span>
+            <span>🎯 <strong>已鎖定紅框標註！</strong>本次將針對<strong>紅框內部獨立重繪</strong>，未框選區域絕對原樣保留。</span>
           </div>
-          <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
-            <input type="checkbox" id="chkFillMaskBounds" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
-            <span>自動填滿紅框內部</span>
-          </label>
+          <div class="flex items-center gap-3">
+            <button type="button" id="btnEraseMaskContent" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer">
+              <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+              <span id="btnEraseMaskText">🧹 消除紅框內容 (無痕抹除)</span>
+            </button>
+            <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
+              <input type="checkbox" id="chkFillMaskBounds" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
+              <span>獨立填滿各紅框內部</span>
+            </label>
+          </div>
         </div>
 
         <div class="flex items-stretch sm:items-start gap-2.5">
@@ -850,6 +856,7 @@
     let currentMode = 'generate'; // 'generate' | 'edit'
     let activeTool = 'select';    // 'select' | 'brush'
     let currentImageObj = null;   // 當前載入的 Fabric.Image
+    let currentCanvasPrompt = ''; // 當前畫布圖片的完整提示詞與文案上下文 (防止微調時上下文丟失)
     let currentZoom = 1.0;        // 當前視窗縮放比例
     let originalNativeW = 864;    // 原生畫布寬度 (保持原生解析度)
     let originalNativeH = 1536;   // 原生畫布高度
@@ -951,9 +958,12 @@
     const btnExecuteQuickRefine = document.getElementById('btnExecuteQuickRefine');
     const btnQuickRefineText = document.getElementById('btnQuickRefineText');
     const btnFocusRefine = document.getElementById('btnFocusRefine');
+    const refineTargetBadge = document.getElementById('refineTargetBadge');
     const btnClearQuickMask = document.getElementById('btnClearQuickMask');
     const maskActiveAlert = document.getElementById('maskActiveAlert');
     const chkFillMaskBounds = document.getElementById('chkFillMaskBounds');
+    const btnEraseMaskContent = document.getElementById('btnEraseMaskContent');
+    const btnEraseMaskText = document.getElementById('btnEraseMaskText');
 
     // 畫布工具按鈕
     const toolSelect = document.getElementById('toolSelect');
@@ -1162,6 +1172,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       const config = SKILL_TEMPLATES[activeSkillMode];
       const item = config.options[idx];
       if (item) {
+        currentCanvasPrompt = item.prompt;
         inputPrompt.value = item.prompt;
         renderSubTemplatePills(activeSkillMode, idx);
         showStatus(`已載入：${item.title}`, 'info');
@@ -1223,6 +1234,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       subTemplateBox.classList.remove('hidden');
 
       // 載入第一個模板 prompt
+      currentCanvasPrompt = config.options[0].prompt;
       inputPrompt.value = config.options[0].prompt;
       if (window.lucide) lucide.createIcons();
       showStatus(`已載入【${config.name}】深度 Prompt 規範與推薦比例 (${config.aspect})`, 'success');
@@ -1705,16 +1717,17 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
         card.querySelector('.btn-load').addEventListener('click', (e) => {
           e.stopPropagation();
-          const [w, h] = (item.size || '864x1536').split('x').map(Number);
-          loadImageToCanvas(item.dataUrl, w, h);
-          inputPrompt.value = item.prompt || '';
+          currentCanvasPrompt = item.prompt || '';
+          loadImageToCanvas(item.dataUrl, w, h, currentCanvasPrompt);
+          inputPrompt.value = currentCanvasPrompt;
           showStatus('已將歷史圖卡重新加載至畫布！', 'info');
         });
 
         card.addEventListener('click', () => {
           const [w, h] = (item.size || '864x1536').split('x').map(Number);
-          loadImageToCanvas(item.dataUrl, w, h);
-          inputPrompt.value = item.prompt || '';
+          currentCanvasPrompt = item.prompt || '';
+          loadImageToCanvas(item.dataUrl, w, h, currentCanvasPrompt);
+          inputPrompt.value = currentCanvasPrompt;
           showStatus('已將歷史圖卡重新加載至畫布！', 'info');
         });
 
@@ -1949,7 +1962,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
       if (hasMask) {
         if (refineTargetBadge) {
-          refineTargetBadge.innerHTML = `<span class="flex items-center gap-1.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span></span> 🎯 偵測到紅框遮罩 (${maskObjects.length}處標註)</span>`;
+          refineTargetBadge.innerHTML = `<span class="flex items-center gap-1.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span></span> 🎯 偵測到紅框遮罩 (${maskObjects.length}處獨立標註)</span>`;
           refineTargetBadge.className = 'text-[10px] sm:text-xs font-bold bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 px-2.5 py-0.5 rounded-full shadow-sm';
         }
         if (maskActiveAlert) maskActiveAlert.classList.remove('hidden');
@@ -2444,6 +2457,11 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     document.getElementById('btnClearPrompt').addEventListener('click', () => {
       inputPrompt.value = '';
+      currentCanvasPrompt = '';
+    });
+
+    inputPrompt.addEventListener('input', () => {
+      currentCanvasPrompt = inputPrompt.value.trim();
     });
 
     selectModel.addEventListener('change', () => {
@@ -2576,7 +2594,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     // -------------------------------------------------------------
     // 12. 載入圖片至畫布與自動適應全圖
     // -------------------------------------------------------------
-    function loadImageToCanvas(imgUrl, customWidth, customHeight) {
+    function loadImageToCanvas(imgUrl, customWidth, customHeight, associatedPrompt) {
       fabric.Image.fromURL(imgUrl, function(img) {
         const targetW = customWidth || img.width || 864;
         const targetH = customHeight || img.height || 1536;
@@ -2593,6 +2611,9 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         });
 
         currentImageObj = img;
+        if (associatedPrompt !== undefined && associatedPrompt !== null) {
+          currentCanvasPrompt = associatedPrompt;
+        }
         updateRefineBadgeState();
         canvas.add(img);
         canvas.sendToBack(img);
@@ -2609,8 +2630,10 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       const reader = new FileReader();
       reader.onload = async function(evt) {
         const dataUrl = evt.target.result;
-        loadImageToCanvas(dataUrl);
-        await saveImageToDB(dataUrl, '本機圖片: ' + file.name, 'local', `${originalNativeW}x${originalNativeH}`);
+        const localPrompt = '本機圖片: ' + file.name;
+        currentCanvasPrompt = localPrompt;
+        loadImageToCanvas(dataUrl, undefined, undefined, localPrompt);
+        await saveImageToDB(dataUrl, localPrompt, 'local', `${originalNativeW}x${originalNativeH}`);
         refreshGalleryFromDB();
         showStatus('✅ 已載入並永久保存本機圖片至歷史庫', 'success');
       };
@@ -2715,7 +2738,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
         const permanentDataUrl = await ensureDataUrl(rawUrl);
         const [w, h] = size.split('x').map(Number);
-        loadImageToCanvas(permanentDataUrl, w, h);
+        currentCanvasPrompt = prompt;
+        loadImageToCanvas(permanentDataUrl, w, h, prompt);
 
         await saveImageToDB(permanentDataUrl, prompt, model, size);
         refreshGalleryFromDB();
@@ -2817,8 +2841,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         }
 
         const permanentDataUrl = await ensureDataUrl(rawUrl);
-
-        loadImageToCanvas(permanentDataUrl, targetW, targetH);
+        currentCanvasPrompt = prompt;
+        loadImageToCanvas(permanentDataUrl, targetW, targetH, prompt);
         await saveImageToDB(permanentDataUrl, `[多圖以圖生圖 ×${referenceImages.length}] ` + prompt, model, size);
         refreshGalleryFromDB();
 
@@ -2867,12 +2891,29 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
       if (hasMask) {
         // 2. 取得純遮罩圖層 (只顯示 isMaskPath 遮罩物件，隱藏主圖與其他文字圖層)
+        const shouldFillBounds = chkFillMaskBounds ? chkFillMaskBounds.checked : true;
+        const savedFillMap = new Map();
+
         allObjects.forEach(obj => {
           obj.visible = !!obj.isMaskPath;
+          if (obj.isMaskPath) {
+            savedFillMap.set(obj, obj.fill);
+            // 若勾選自動填滿紅框內部，將各矩形遮罩內部強制設為純色實心紅，確保像素全覆蓋
+            if (shouldFillBounds && obj.type === 'rect') {
+              obj.fill = 'rgba(239, 68, 68, 1.0)';
+            }
+          }
         });
         canvas.renderAll();
 
         const maskStrokesDataUrl = canvas.toDataURL({ format: 'png', quality: 1.0, multiplier: 1 });
+
+        // 恢復遮罩物件原本的半透明填色
+        allObjects.forEach(obj => {
+          if (obj.isMaskPath && savedFillMap.has(obj)) {
+            obj.fill = savedFillMap.get(obj);
+          }
+        });
 
         // 3. 轉碼為符合 OpenAI 規範的精確遮罩
         // OpenAI 規範：完全透明 (Alpha = 0) 代表重繪區域，不透明純白 (Alpha = 255) 代表保留區域
@@ -2889,50 +2930,38 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const maskCtx = maskCanvas.getContext('2d');
         maskCtx.drawImage(strokeImg, 0, 0);
 
+        // 為每一個矩形遮罩獨立填色，確保完全無遺漏，且絕不跨物件合併全域外框！
+        if (shouldFillBounds) {
+          maskCtx.fillStyle = 'rgba(239, 68, 68, 1.0)';
+          maskObjects.forEach(obj => {
+            if (obj.type === 'rect') {
+              const b = obj.getBoundingRect(true);
+              maskCtx.fillRect(Math.floor(b.left), Math.floor(b.top), Math.ceil(b.width), Math.ceil(b.height));
+            }
+          });
+        }
+
         const imgData = maskCtx.getImageData(0, 0, nativeW, nativeH);
         const data = imgData.data;
 
         let transparentCount = 0;
         const totalPixels = nativeW * nativeH;
 
-        // 檢查是否有勾選「自動填滿紅框內部」
-        const shouldFillBounds = chkFillMaskBounds ? chkFillMaskBounds.checked : true;
-        let minX = nativeW, minY = nativeH, maxX = 0, maxY = 0;
-
-        if (shouldFillBounds) {
-          for (let y = 0; y < nativeH; y++) {
-            for (let x = 0; x < nativeW; x++) {
-              const idx = (y * nativeW + x) * 4;
-              if (data[idx + 3] > 10) {
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-              }
-            }
-          }
-        }
-
-        for (let y = 0; y < nativeH; y++) {
-          for (let x = 0; x < nativeW; x++) {
-            const i = (y * nativeW + x) * 4;
-            const isDrawn = data[i + 3] > 10;
-            const isInsideBounds = shouldFillBounds && (maxX > minX) && (x >= minX && x <= maxX && y >= minY && y <= maxY);
-
-            if (isDrawn || isInsideBounds) {
-              // 重繪區：完全透明 (Alpha = 0)
-              data[i] = 0;
-              data[i + 1] = 0;
-              data[i + 2] = 0;
-              data[i + 3] = 0;
-              transparentCount++;
-            } else {
-              // 保留區：純白色 (Alpha = 255)
-              data[i] = 255;
-              data[i + 1] = 255;
-              data[i + 2] = 255;
-              data[i + 3] = 255;
-            }
+        for (let i = 0; i < data.length; i += 4) {
+          // 只要有繪製遮罩或矩形填色的像素 (Alpha > 10)
+          if (data[i + 3] > 10) {
+            // 重繪區：完全透明 (Alpha = 0)
+            data[i] = 0;
+            data[i + 1] = 0;
+            data[i + 2] = 0;
+            data[i + 3] = 0;
+            transparentCount++;
+          } else {
+            // 保留區：純白色 (Alpha = 255)
+            data[i] = 255;
+            data[i + 1] = 255;
+            data[i + 2] = 255;
+            data[i + 3] = 255;
           }
         }
 
@@ -3005,16 +3034,18 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const permanentDataUrl = await ensureDataUrl(rawUrl);
 
         clearMaskPaths();
-        loadImageToCanvas(permanentDataUrl, nativeW, nativeH);
+        loadImageToCanvas(permanentDataUrl, nativeW, nativeH, currentCanvasPrompt);
 
-        await saveImageToDB(permanentDataUrl, '[局部重繪] ' + prompt, model, `${nativeW}x${nativeH}`);
+        const isErase = prompt.includes('Seamlessly erase') || prompt.includes('消除紅框');
+        const recordTitle = isErase ? `[無痕抹除紅框內容 ×${maskCoveragePercent}%]` : '[局部重繪] ' + prompt;
+        await saveImageToDB(permanentDataUrl, recordTitle, model, `${nativeW}x${nativeH}`);
         refreshGalleryFromDB();
 
         if (chkAutoDownload.checked) {
           triggerAutoDownload(permanentDataUrl, prompt);
         }
 
-        showStatus(`✨ 局部重繪修圖完成！(覆蓋約 ${maskCoveragePercent}%) 已自動保存至本機資料庫`, 'success');
+        showStatus(isErase ? `✨ 紅框內容已無痕抹除！(覆蓋約 ${maskCoveragePercent}%) 乾淨底色已更新並存入歷史庫` : `✨ 局部重繪修圖完成！(覆蓋約 ${maskCoveragePercent}%) 已自動保存至本機資料庫`, 'success');
       } catch (err) {
         console.error('修圖失敗:', err);
         showStatus(`❌ 局部重繪失敗：${err.message}`, 'error');
@@ -3052,9 +3083,18 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const { baseBlob, maskBlob, hasMask, maskCoveragePercent } = await prepareCanvasExportWithMask();
         const validSize = getValidOpenAISize(`${nativeW}x${nativeH}`, model);
 
+        // 核心修正：完整保留主圖既有內容與文案上下文，絕不發送 context-free 的孤立短句！
+        const baseContext = currentCanvasPrompt || inputPrompt.value.trim();
+        let promptToSend = refinePrompt.trim();
+
+        if (baseContext && baseContext !== promptToSend) {
+          // 組合原圖完整設計上下文與增量修正指示，徹底防止模型因 context-free 自由妄想產生股票理財等無關文字
+          promptToSend = `[畫面原始核心設計與完整文案 Context (必須嚴格遵照保留，嚴禁擅自改編或遺漏)]:\n${baseContext}\n\n[使用者本次具體微調指示 User Specific Edits]:\n${promptToSend}\n\n[嚴格限制]: 請務必維持本圖的主題風格與視覺調性，文字排版僅能依據上述既有文案進行調整，嚴禁無中生有生成任何與主旨無關之股票、美股、理財或無關廣告文案。`;
+        }
+
         const formData = new FormData();
         formData.append('image', baseBlob, 'canvas_image.png');
-        formData.append('prompt', refinePrompt.trim());
+        formData.append('prompt', promptToSend);
         formData.append('model', model);
         formData.append('n', '1');
         formData.append('size', validSize);
@@ -3062,7 +3102,12 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         if (hasMask && maskBlob) {
           // 自動附加紅框遮罩進行局部精確重繪
           formData.append('mask', maskBlob, 'mask.png');
-          showStatus(`🎯 已成功偵測到紅框遮罩（覆蓋約 ${maskCoveragePercent}%），正在送出局部精準重繪...`, 'info');
+          const isLayoutIntent = /第一句|第二句|排版|順序|換行|放上|放下|位置|上下顛倒/.test(refinePrompt);
+          if (isLayoutIntent) {
+            showStatus(`🎯 正在局部重繪紅框區（覆蓋約 ${maskCoveragePercent}%）。💡 提示：若需重新排列未被紅框圈選的中間文字，請先點擊【清除紅框遮罩】後送出全圖微調！`, 'info');
+          } else {
+            showStatus(`🎯 已成功偵測到紅框遮罩（覆蓋約 ${maskCoveragePercent}%），正在送出局部精準重繪...`, 'info');
+          }
         } else {
           showStatus('✨ 未偵測到紅框遮罩，正在送出全圖整體微調...', 'info');
         }
@@ -3090,7 +3135,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           const retryFormData = new FormData();
           retryFormData.append('image', baseBlob, 'canvas_image.png');
           retryFormData.append('mask', tBlob, 'mask.png');
-          retryFormData.append('prompt', refinePrompt.trim());
+          retryFormData.append('prompt', promptToSend);
           retryFormData.append('model', model);
           retryFormData.append('n', '1');
           retryFormData.append('size', validSize);
@@ -3114,7 +3159,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const permanentDataUrl = await ensureDataUrl(rawUrl);
 
         clearMaskPaths();
-        loadImageToCanvas(permanentDataUrl, nativeW, nativeH);
+        loadImageToCanvas(permanentDataUrl, nativeW, nativeH, promptToSend);
+        inputPrompt.value = promptToSend;
 
         const recordTitle = hasMask ? `[紅框局部修正 ×${maskCoveragePercent}%] ` + refinePrompt : '[全圖微調] ' + refinePrompt;
         await saveImageToDB(permanentDataUrl, recordTitle, model, `${nativeW}x${nativeH}`);
@@ -3155,9 +3201,37 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           return;
         }
 
-        // 同步填入左側提示詞以利查看記錄
-        inputPrompt.value = refineText;
         await executeGlobalRefine(apiKey, refineText);
+      });
+    }
+
+    // 畫布紅框提示條「🧹 消除紅框內容 (無痕抹除)」事件
+    if (btnEraseMaskContent) {
+      btnEraseMaskContent.addEventListener('click', async () => {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          keyModal.classList.remove('hidden');
+          showStatus('請先點擊右上角填入 OpenAI API Key', 'error');
+          return;
+        }
+
+        const maskObjects = canvas.getObjects().filter(o => o.isMaskPath);
+        if (maskObjects.length === 0) {
+          showStatus('請先在畫布上拉出紅框或使用筆刷圈選要消除的區塊！', 'error');
+          return;
+        }
+
+        setLoading(true, '正在無痕抹除紅框內容並還原乾淨底色...');
+        btnEraseMaskContent.disabled = true;
+        if (btnEraseMaskText) btnEraseMaskText.innerText = '抹除消除中...';
+
+        try {
+          const erasePrompt = "Seamlessly erase and remove all text, badges, banners, logos, borders, stars, and decorative symbols inside the masked region. Seamlessly restore and blend with the surrounding clean background color, smooth texture, and lighting gradient. Keep the masked region completely clean, empty, spotless, and perfectly continuous with the adjacent unmasked image. No text, no letters, no icons, completely spotless.";
+          await executeInpaint(apiKey, erasePrompt);
+        } finally {
+          btnEraseMaskContent.disabled = false;
+          if (btnEraseMaskText) btnEraseMaskText.innerText = '🧹 消除紅框內容 (無痕抹除)';
+        }
       });
     }
 
