@@ -76,6 +76,19 @@
     .custom-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
+
+    /* 左側側邊欄折疊收合樣式 */
+    .sidebar-collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+      max-width: 0 !important;
+      opacity: 0 !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      pointer-events: none !important;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
@@ -123,18 +136,21 @@
   </header>
 
   <!-- ================= 主要工作區 ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4 flex flex-col lg:flex-row gap-4 relative items-start">
     
-    <!-- 左側控制面板 (4 欄) -->
-    <section class="lg:col-span-4 flex flex-col gap-4">
+    <!-- 左側控制面板 -->
+    <aside id="sidebarPanel" class="w-full lg:w-[390px] xl:w-[420px] flex-shrink-0 flex flex-col gap-4 transition-all duration-300 ease-in-out">
       
-      <!-- 模式切換分頁 -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 flex gap-1 shadow-sm transition-colors">
-        <button id="tabGenerate" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md">
-          <i data-lucide="wand-2" class="w-4 h-4"></i> 全新生圖 / 以圖生圖
+      <!-- 模式切換分頁 (3 大模式) -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 flex gap-1 shadow-sm transition-colors text-xs sm:text-sm">
+        <button type="button" id="tabGenerate" class="flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all bg-emerald-600 text-white shadow-md" title="全新文字生圖或以參考圖為基底生圖">
+          <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> 全新生圖
         </button>
-        <button id="tabEdit" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60">
-          <i data-lucide="brush" class="w-4 h-4"></i> 局部遮罩修圖
+        <button type="button" id="tabRefine" class="flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60" title="以當前畫布圖片為基底，輸入指令進行整體微調">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> 全圖微調
+        </button>
+        <button type="button" id="tabEdit" class="flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60" title="在畫布塗抹紅色遮罩，僅針對塗抹區域重繪">
+          <i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部塗抹
         </button>
       </div>
 
@@ -354,12 +370,22 @@
         </div>
 
         <!-- 局部修圖提示引導 (修圖分頁顯示) -->
-        <div id="inpaintGuideBox" class="hidden bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-200">
+        <div id="inpaintGuideBox" class="hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3 text-xs text-rose-800 dark:text-rose-200">
           <p class="font-bold flex items-center gap-1.5 mb-1">
-            <i data-lucide="info" class="w-3.5 h-3.5"></i> 局部修改操作指引：
+            <i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部修改操作指引：
           </p>
           <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
             請在右側畫布使用「紅色塗抹筆刷」框選要修改的區域（畫錯可按工具列的「上一步」撤銷），在下方 Prompt 輸入希望塗抹區域替換成什麼內容，然後點擊執行！
+          </p>
+        </div>
+
+        <!-- 全圖整體修正提示引導 (微調分頁顯示) -->
+        <div id="refineGuideBox" class="hidden bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl p-3 text-xs text-blue-800 dark:text-blue-200">
+          <p class="font-bold flex items-center gap-1.5 mb-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> 全圖補充修正指引：
+          </p>
+          <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+            系統將自動以右側畫布的原圖為基底（不需塗抹筆刷）。請在上方 Prompt 輸入想微調的地方（如：「背景改為珊瑚粉」、「增加舞台暖色燈光」、「右側文字修改為...」），GPT Image 2.5 將在維持原圖主要人物的前提下整體微調！
           </p>
         </div>
 
@@ -380,16 +406,30 @@
         <!-- 狀態提示框 -->
         <div id="statusAlert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2"></div>
       </div>
-    </section>
+    </aside>
 
-    <!-- 右側面板：畫布與圖卡排版工具 (8 欄) -->
-    <section class="lg:col-span-8 flex flex-col gap-4">
+    <!-- 側邊欄折疊/展開按鈕 (位於左側面板與畫布交界處) -->
+    <div class="hidden lg:flex items-center self-stretch relative z-30">
+      <button type="button" id="btnToggleSidebar" class="sticky top-28 -mx-3.5 w-6 h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full shadow-md hover:shadow-lg flex items-center justify-center text-slate-400 hover:text-emerald-500 hover:border-emerald-500 dark:hover:border-emerald-500 hover:scale-110 active:scale-95 transition-all cursor-pointer group" title="收合/展開左側工具列 (專注看圖，快捷鍵: [ )">
+        <i id="iconToggleSidebar" data-lucide="chevron-left" class="w-4 h-4 transition-transform group-hover:scale-125"></i>
+      </button>
+    </div>
+
+    <!-- 右側面板：畫布與圖卡排版工具 -->
+    <section id="rightWorkspace" class="flex-1 w-full min-w-0 flex flex-col gap-4 transition-all duration-300 ease-in-out">
       
       <!-- 畫布工具列 -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm transition-colors">
         
         <!-- 左側工具組：選擇、筆刷、上一步、下一步、文字 -->
         <div class="flex items-center flex-wrap gap-1.5">
+          
+          <!-- 折疊/展開左側面板按鈕 -->
+          <button type="button" id="btnToolbarCollapse" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-emerald-500 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors" title="收合/展開左側工具列 (快捷鍵: [ )">
+            <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+          </button>
+          
+          <div class="h-5 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
           
           <!-- 選取工具 -->
           <button id="toolSelect" class="p-2 rounded-xl bg-emerald-50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors" title="選取/移動/縮放物件 (V)">
@@ -513,6 +553,12 @@
             <span>最適全圖</span>
           </button>
 
+          <!-- 快速整體修正按鈕 -->
+          <button type="button" id="btnFocusRefine" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-[11px] transition-colors shadow-sm" title="快速補充修正這張圖 (全圖微調)">
+            <i data-lucide="sparkles" class="w-3 h-3 text-blue-500"></i>
+            <span>補充修正</span>
+          </button>
+
           <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
 
           <!-- 暗房調色按鈕 -->
@@ -628,6 +674,41 @@
           原生解析度: <span id="canvasSizeLabel">864 x 1536</span> px
         </div>
 
+      </div>
+
+      <!-- ================= 畫布專屬：補充修正對話框 (全圖整體微調) ================= -->
+      <div id="quickRefineCard" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
+            <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <i data-lucide="message-square-code" class="w-4 h-4 text-blue-500"></i> 對當前圖片補充修正 Prompt (整體對話微調)
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="refineTargetBadge" class="text-[10px] font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full">已就緒 ‧ 以畫布圖片為基底</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <input type="text" id="inputQuickRefine" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner" placeholder="💬 輸入修正需求... 例如：背景改為溫暖珊瑚粉、文字改為「...」、人物眼神與微笑更自然親切">
+          </div>
+          <button type="button" id="btnExecuteQuickRefine" class="flex-shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-md shadow-blue-600/25 transition-all cursor-pointer">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span id="btnQuickRefineText">立即修正</span>
+          </button>
+        </div>
+
+        <!-- 快速微調靈感標籤 -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span class="text-[10.5px] text-slate-400 font-medium">快捷微調靈感:</span>
+          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="背景改為深藍科技感漸層 (#0A2540)，增加精緻環境光暈">深藍科技背景</button>
+          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="背景改為溫暖珊瑚粉橘 (#FF6E6E)，增強親和力與希望感">暖心珊瑚粉背景</button>
+          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="微調人物眼神與微笑表情，光影更加通透自然">人像表情微調</button>
+          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="強化文字排版對比，核心關鍵字加強亮金黃高光 (#FFE600)">文字高光強化</button>
+          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="提升鏡頭景深，背景虛化，人物主體更加立體分明">加強人像景深</button>
+        </div>
       </div>
 
       <!-- 底部永久歷史縮圖庫 (IndexedDB 永久保存) -->
@@ -822,10 +903,25 @@
     const btnScopeCanvas = document.getElementById('btnScopeCanvas');
     const btnScopeAll = document.getElementById('btnScopeAll');
 
-    // 模式切換鈕
+    // 側邊欄與折疊控制
+    const sidebarPanel = document.getElementById('sidebarPanel');
+    const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+    const iconToggleSidebar = document.getElementById('iconToggleSidebar');
+    const btnToolbarCollapse = document.getElementById('btnToolbarCollapse');
+
+    // 模式切換鈕 (全新生圖 / 全圖微調 / 局部塗抹)
     const tabGenerate = document.getElementById('tabGenerate');
+    const tabRefine = document.getElementById('tabRefine');
     const tabEdit = document.getElementById('tabEdit');
     const inpaintGuideBox = document.getElementById('inpaintGuideBox');
+    const refineGuideBox = document.getElementById('refineGuideBox');
+
+    // 補充修正 Prompt 對話框元素
+    const quickRefineCard = document.getElementById('quickRefineCard');
+    const inputQuickRefine = document.getElementById('inputQuickRefine');
+    const btnExecuteQuickRefine = document.getElementById('btnExecuteQuickRefine');
+    const btnQuickRefineText = document.getElementById('btnQuickRefineText');
+    const btnFocusRefine = document.getElementById('btnFocusRefine');
 
     // 畫布工具按鈕
     const toolSelect = document.getElementById('toolSelect');
@@ -1306,6 +1402,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         } else {
           btnExecuteText.innerText = '立即生成圖片 (GPT 2.5)';
         }
+      } else if (currentMode === 'refine') {
+        btnExecuteText.innerText = '🚀 依據畫布原圖送出整體修正 (GPT 2.5)';
       } else {
         btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
       }
@@ -1811,6 +1909,18 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     initDarkroom();
 
+    function updateRefineBadgeState() {
+      const refineTargetBadge = document.getElementById('refineTargetBadge');
+      if (!refineTargetBadge) return;
+      if (currentImageObj) {
+        refineTargetBadge.innerText = '已就緒 ‧ 以畫布圖片為基底';
+        refineTargetBadge.className = 'text-[10px] font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full';
+      } else {
+        refineTargetBadge.innerText = '等待畫布載入圖片';
+        refineTargetBadge.className = 'text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-full';
+      }
+    }
+
     // -------------------------------------------------------------
     // 6. 初始化 Fabric.js 畫布與縮放架構
     // -------------------------------------------------------------
@@ -1854,6 +1964,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       maskUndoStack = [];
       maskRedoStack = [];
       updateUndoRedoUI();
+      currentImageObj = null;
+      updateRefineBadgeState();
 
       fitToScreen();
     }
@@ -2011,25 +2123,100 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     // 10. 模式切換與工具列
     // -------------------------------------------------------------
     tabGenerate.addEventListener('click', () => switchMode('generate'));
+    tabRefine.addEventListener('click', () => switchMode('refine'));
     tabEdit.addEventListener('click', () => switchMode('edit'));
 
     function switchMode(mode) {
       currentMode = mode;
+      const tabActive = "flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all bg-emerald-600 text-white shadow-md";
+      const tabInactive = "flex-1 py-2 px-2 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
+
       if (mode === 'generate') {
-        tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
-        tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
+        tabGenerate.className = tabActive;
+        tabRefine.className = tabInactive;
+        tabEdit.className = tabInactive;
         promptLabel.innerHTML = '<i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)';
         inpaintGuideBox.classList.add('hidden');
+        refineGuideBox.classList.add('hidden');
         setTool('select');
+      } else if (mode === 'refine') {
+        tabRefine.className = tabActive;
+        tabGenerate.className = tabInactive;
+        tabEdit.className = tabInactive;
+        promptLabel.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> 全圖微調指示 (以當前畫布為基底整體迭代)';
+        inpaintGuideBox.classList.add('hidden');
+        refineGuideBox.classList.remove('hidden');
+        setTool('select');
+        if (inputQuickRefine && inputQuickRefine.value.trim() && !inputPrompt.value.trim()) {
+          inputPrompt.value = inputQuickRefine.value.trim();
+        }
       } else {
-        tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
-        tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
+        tabEdit.className = tabActive;
+        tabGenerate.className = tabInactive;
+        tabRefine.className = tabInactive;
         promptLabel.innerHTML = '<i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部修改描述 (請描述塗抹區塊想替換成什麼)';
         inpaintGuideBox.classList.remove('hidden');
+        refineGuideBox.classList.add('hidden');
         setTool('brush');
       }
       updateExecuteButtonText();
       lucide.createIcons();
+    }
+
+    // -------------------------------------------------------------
+    // 10.1 側邊欄折疊/收合控制系統
+    // -------------------------------------------------------------
+    function toggleSidebar(forceState) {
+      const isCurrentlyCollapsed = sidebarPanel.classList.contains('sidebar-collapsed');
+      const shouldCollapse = forceState !== undefined ? forceState : !isCurrentlyCollapsed;
+
+      if (shouldCollapse) {
+        sidebarPanel.classList.add('sidebar-collapsed');
+        btnToggleSidebar.innerHTML = '<i data-lucide="chevron-right" class="w-4 h-4 transition-transform group-hover:scale-125"></i>';
+        btnToolbarCollapse.innerHTML = '<i data-lucide="panel-left-open" class="w-4 h-4"></i>';
+        btnToggleSidebar.title = "展開左側工具列 (快捷鍵: [ )";
+        btnToolbarCollapse.title = "展開左側工具列 (快捷鍵: [ )";
+        btnToolbarCollapse.classList.add('text-emerald-600', 'dark:text-emerald-400', 'bg-emerald-50', 'dark:bg-slate-800');
+        localStorage.setItem('sidebar_collapsed', 'true');
+      } else {
+        sidebarPanel.classList.remove('sidebar-collapsed');
+        btnToggleSidebar.innerHTML = '<i data-lucide="chevron-left" class="w-4 h-4 transition-transform group-hover:scale-125"></i>';
+        btnToolbarCollapse.innerHTML = '<i data-lucide="panel-left-close" class="w-4 h-4"></i>';
+        btnToggleSidebar.title = "收合左側工具列 (專注看圖，快捷鍵: [ )";
+        btnToolbarCollapse.title = "收合左側工具列 (快捷鍵: [ )";
+        btnToolbarCollapse.classList.remove('text-emerald-600', 'dark:text-emerald-400', 'bg-emerald-50', 'dark:bg-slate-800');
+        localStorage.setItem('sidebar_collapsed', 'false');
+      }
+
+      lucide.createIcons();
+
+      // 在側邊欄動畫完成後 (300ms transition)，重新計算畫布最佳適應尺寸
+      setTimeout(() => {
+        fitToScreen();
+      }, 320);
+    }
+
+    if (btnToggleSidebar) {
+      btnToggleSidebar.addEventListener('click', () => toggleSidebar());
+    }
+    if (btnToolbarCollapse) {
+      btnToolbarCollapse.addEventListener('click', () => toggleSidebar());
+    }
+
+    // 鍵盤快捷鍵：按 "[" 或 "Cmd+B / Ctrl+B" 快速切換側邊欄
+    window.addEventListener('keydown', (e) => {
+      const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+      if (isInput) return;
+
+      if (e.key === '[' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b')) {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    });
+
+    // 初始化讀取側邊欄狀態 (僅在桌機大螢幕生效，避免手機版跑版)
+    if (window.innerWidth >= 1024 && localStorage.getItem('sidebar_collapsed') === 'true') {
+      toggleSidebar(true);
     }
 
     function setTool(tool) {
@@ -2260,6 +2447,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         });
 
         currentImageObj = img;
+        updateRefineBadgeState();
         canvas.add(img);
         canvas.sendToBack(img);
         canvasEmptyState.classList.add('hidden');
@@ -2309,6 +2497,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           // 純文字生圖 (Text-to-Image)
           await executeGeneration(apiKey, prompt);
         }
+      } else if (currentMode === 'refine') {
+        await executeGlobalRefine(apiKey, prompt);
       } else {
         await executeInpaint(apiKey, prompt);
       }
@@ -2603,6 +2793,188 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       } finally {
         setLoading(false);
       }
+    }
+
+    // -------------------------------------------------------------
+    // 13.4 全圖整體補充修正微調 (Global Iteration via /v1/images/edits)
+    // -------------------------------------------------------------
+    async function executeGlobalRefine(apiKey, refinePrompt) {
+      if (!currentImageObj) {
+        showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
+        return;
+      }
+
+      if (!refinePrompt || !refinePrompt.trim()) {
+        showStatus('請先輸入整體修正需求提示詞！', 'error');
+        if (inputQuickRefine) inputQuickRefine.focus();
+        return;
+      }
+
+      setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 進行全圖微調修正...');
+      if (btnExecuteQuickRefine) {
+        btnExecuteQuickRefine.disabled = true;
+        btnQuickRefineText.innerText = '修正中...';
+      }
+
+      try {
+        const nativeW = originalNativeW;
+        const nativeH = originalNativeH;
+        const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-sunburst';
+
+        const savedZoom = currentZoom;
+        applyZoom(1.0);
+
+        // 隱藏非主圖物件 (例如局部遮罩線條、文字選取框等)
+        const allObjects = canvas.getObjects();
+        const hiddenStates = [];
+        allObjects.forEach(obj => {
+          if (obj !== currentImageObj) {
+            hiddenStates.push({ obj: obj, vis: obj.visible });
+            obj.visible = false;
+          }
+        });
+        canvas.discardActiveObject();
+        canvas.renderAll();
+
+        const baseDataUrl = canvas.toDataURL({ format: 'png', quality: 1.0, multiplier: 1 });
+        const baseBlob = await (await fetch(baseDataUrl)).blob();
+
+        hiddenStates.forEach(item => item.obj.visible = item.vis);
+        applyZoom(savedZoom);
+        canvas.renderAll();
+
+        const validSize = getValidOpenAISize(`${nativeW}x${nativeH}`, model);
+        const formData = new FormData();
+        formData.append('image', baseBlob, 'canvas_image.png');
+        formData.append('prompt', refinePrompt.trim());
+        formData.append('model', model);
+        formData.append('n', '1');
+        formData.append('size', validSize);
+
+        let response = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: formData
+        });
+
+        let data = await response.json();
+
+        // 智慧相容重試：若特定代理伺服器或網關強制要求 mask 欄位，自動帶入全透明遮罩重試
+        if (!response.ok && data.error?.message && (data.error.message.toLowerCase().includes('mask') || data.error.message.includes('遮罩'))) {
+          console.warn('API 提示缺少 mask，自動生成全畫布透明遮罩重新發送...', data.error.message);
+          showStatus('正在自動以全畫布透明遮罩格式送出微調...', 'info');
+
+          const tCanvas = document.createElement('canvas');
+          tCanvas.width = nativeW;
+          tCanvas.height = nativeH;
+          const tBlob = await new Promise(res => tCanvas.toBlob(res, 'image/png'));
+
+          const retryFormData = new FormData();
+          retryFormData.append('image', baseBlob, 'canvas_image.png');
+          retryFormData.append('mask', tBlob, 'mask.png');
+          retryFormData.append('prompt', refinePrompt.trim());
+          retryFormData.append('model', model);
+          retryFormData.append('n', '1');
+          retryFormData.append('size', validSize);
+
+          response = await fetch('https://api.openai.com/v1/images/edits', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: retryFormData
+          });
+          data = await response.json();
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error?.message || `全圖微調失敗，API 代碼: ${response.status}`);
+        }
+
+        const imgData = data.data[0];
+        const rawUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
+        const permanentDataUrl = await ensureDataUrl(rawUrl);
+
+        clearMaskPaths();
+        loadImageToCanvas(permanentDataUrl, nativeW, nativeH);
+
+        await saveImageToDB(permanentDataUrl, '[全圖微調] ' + refinePrompt, model, `${nativeW}x${nativeH}`);
+        refreshGalleryFromDB();
+
+        if (chkAutoDownload.checked) {
+          triggerAutoDownload(permanentDataUrl, refinePrompt);
+        }
+
+        showStatus('✨ 全圖整體修正完成！新圖已更新並永久存入本機資料庫', 'success');
+
+      } catch (err) {
+        console.error('全圖微調失敗:', err);
+        showStatus(`❌ 全圖微調失敗：${err.message}`, 'error');
+      } finally {
+        setLoading(false);
+        if (btnExecuteQuickRefine) {
+          btnExecuteQuickRefine.disabled = false;
+          btnQuickRefineText.innerText = '立即修正';
+        }
+      }
+    }
+
+    // 畫布下方「補充修正 Prompt」快速對話框事件
+    if (btnExecuteQuickRefine) {
+      btnExecuteQuickRefine.addEventListener('click', async () => {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+          keyModal.classList.remove('hidden');
+          showStatus('請先點擊右上角填入 OpenAI API Key', 'error');
+          return;
+        }
+
+        const refineText = inputQuickRefine.value.trim();
+        if (!refineText) {
+          showStatus('請先輸入整體修正需求（例如：背景改為暖心珊瑚粉、眼神更親切等）', 'error');
+          inputQuickRefine.focus();
+          return;
+        }
+
+        // 同步填入左側提示詞以利查看記錄
+        inputPrompt.value = refineText;
+        await executeGlobalRefine(apiKey, refineText);
+      });
+    }
+
+    if (inputQuickRefine) {
+      inputQuickRefine.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          btnExecuteQuickRefine.click();
+        }
+      });
+    }
+
+    // 快捷微調靈感標籤點擊
+    document.querySelectorAll('.quick-refine-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const addition = tag.getAttribute('data-refine');
+        if (!addition) return;
+        const current = inputQuickRefine.value.trim();
+        inputQuickRefine.value = current ? `${current}，${addition}` : addition;
+        inputPrompt.value = inputQuickRefine.value;
+        inputQuickRefine.focus();
+      });
+    });
+
+    // 浮動工具列「快速微調」按鈕點擊：平滑滾動並聚焦輸入框
+    if (btnFocusRefine) {
+      btnFocusRefine.addEventListener('click', () => {
+        quickRefineCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        inputQuickRefine.focus();
+        quickRefineCard.classList.add('ring-2', 'ring-blue-500', 'transition-all');
+        setTimeout(() => {
+          quickRefineCard.classList.remove('ring-2', 'ring-blue-500');
+        }, 1500);
+      });
     }
 
     // -------------------------------------------------------------
