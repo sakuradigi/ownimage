@@ -458,7 +458,7 @@
       </div>
 
       <!-- 畫布展示主區域 (支援縮放、最適全圖預覽與滾動) -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-xl flex-1 flex flex-col items-center justify-center min-h-[500px] relative transition-colors">
+      <div id="canvasCard" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-xl flex-1 flex flex-col items-center justify-center min-h-[500px] relative transition-colors">
         
         <!-- 畫布浮動縮放控制列 -->
         <div class="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-md text-xs">
@@ -480,6 +480,97 @@
             <i data-lucide="maximize-2" class="w-3 h-3"></i>
             <span>最適全圖</span>
           </button>
+
+          <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
+
+          <!-- 暗房調色按鈕 -->
+          <button type="button" id="btnDarkroomToggle" class="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-[11px] transition-colors" title="自訂暗房背景色調 (灰階/RGB)">
+            <i data-lucide="palette" class="w-3.5 h-3.5 text-amber-500"></i>
+            <span class="hidden sm:inline">暗房色調</span>
+          </button>
+        </div>
+
+        <!-- 暗房調色彈出面板 -->
+        <div id="darkroomPanel" class="hidden absolute top-14 right-4 z-30 w-72 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-xs">
+          <div class="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <i data-lucide="palette" class="w-3.5 h-3.5 text-amber-500"></i> 暗房背景色調
+            </span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="btnResetDarkroom" class="text-[10px] text-slate-400 hover:text-rose-500 px-1 py-0.5 rounded transition-colors" title="重設為預設底色">重設</button>
+              <button type="button" id="btnCloseDarkroom" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded transition-colors">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 快速經典預設 -->
+          <div class="mb-3">
+            <span class="text-[10px] text-slate-500 dark:text-slate-400 block mb-1.5">經典暗房預設色：</span>
+            <div class="grid grid-cols-5 gap-1.5">
+              <button type="button" class="darkroom-preset-btn flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:scale-105 transition-all" data-r="24" data-g="24" data-b="27" title="影視炭黑 (DaVinci / Apple)">
+                <span class="w-5 h-5 rounded-full border border-white/20 shadow-sm" style="background-color: #18181b;"></span>
+                <span class="text-[9px] text-slate-600 dark:text-slate-400">炭黑</span>
+              </button>
+              <button type="button" class="darkroom-preset-btn flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:scale-105 transition-all" data-r="46" data-g="46" data-b="46" title="PS/LR 深灰 (#2e2e2e)">
+                <span class="w-5 h-5 rounded-full border border-white/20 shadow-sm" style="background-color: #2e2e2e;"></span>
+                <span class="text-[9px] text-slate-600 dark:text-slate-400">PS灰</span>
+              </button>
+              <button type="button" class="darkroom-preset-btn flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:scale-105 transition-all" data-r="119" data-g="119" data-b="119" title="18% 攝影中性灰 (#777777)">
+                <span class="w-5 h-5 rounded-full border border-white/20 shadow-sm" style="background-color: #777777;"></span>
+                <span class="text-[9px] text-slate-600 dark:text-slate-400">18%灰</span>
+              </button>
+              <button type="button" class="darkroom-preset-btn flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:scale-105 transition-all" data-r="30" data-g="41" data-b="59" title="冷調藍灰 (Slate)">
+                <span class="w-5 h-5 rounded-full border border-white/20 shadow-sm" style="background-color: #1e293b;"></span>
+                <span class="text-[9px] text-slate-600 dark:text-slate-400">冷灰</span>
+              </button>
+              <button type="button" class="darkroom-preset-btn flex flex-col items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-amber-500 hover:scale-105 transition-all" data-r="0" data-g="0" data-b="0" title="極致純黑 (#000000)">
+                <span class="w-5 h-5 rounded-full border border-white/20 shadow-sm" style="background-color: #000000;"></span>
+                <span class="text-[9px] text-slate-600 dark:text-slate-400">純黑</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 1. 灰階快速滑桿 -->
+          <div class="mb-2.5">
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-medium text-slate-700 dark:text-slate-300">灰階明暗 (Grayscale)</span>
+              <span id="labelGrayVal" class="font-mono text-[10px] text-slate-400">18% (RGB 46)</span>
+            </div>
+            <input type="range" id="sliderGray" min="0" max="255" value="46" class="w-full accent-amber-500 cursor-pointer h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg">
+          </div>
+
+          <!-- 2. RGB 微調滑桿 -->
+          <div class="mb-3 space-y-1.5 pt-1.5 border-t border-slate-200/70 dark:border-slate-800">
+            <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+              <span>RGB 色溫微調</span>
+              <span id="labelHexVal" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">#2E2E2E</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-rose-500 w-3">R</span>
+              <input type="range" id="sliderR" min="0" max="255" value="46" class="w-full accent-rose-500 cursor-pointer h-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+              <span id="valR" class="font-mono text-[10px] text-slate-400 w-6 text-right">46</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-emerald-500 w-3">G</span>
+              <input type="range" id="sliderG" min="0" max="255" value="46" class="w-full accent-emerald-500 cursor-pointer h-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+              <span id="valG" class="font-mono text-[10px] text-slate-400 w-6 text-right">46</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold text-sky-500 w-3">B</span>
+              <input type="range" id="sliderB" min="0" max="255" value="46" class="w-full accent-sky-500 cursor-pointer h-1 bg-slate-200 dark:bg-slate-700 rounded-lg">
+              <span id="valB" class="font-mono text-[10px] text-slate-400 w-6 text-right">46</span>
+            </div>
+          </div>
+
+          <!-- 3. 作用範圍切換 -->
+          <div class="pt-2 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
+            <span class="text-[10px] text-slate-500 dark:text-slate-400">套用範圍：</span>
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+              <button type="button" id="btnScopeCanvas" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs">僅畫布</button>
+              <button type="button" id="btnScopeAll" class="px-2 py-0.5 text-[10px] rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">全網頁</button>
+            </div>
+          </div>
         </div>
 
         <!-- 空狀態引導 -->
@@ -679,6 +770,24 @@
     const btnZoomReset = document.getElementById('btnZoomReset');
     const btnFitScreen = document.getElementById('btnFitScreen');
     const zoomPercentLabel = document.getElementById('zoomPercentLabel');
+
+    // 暗房調色控制項
+    const canvasCard = document.getElementById('canvasCard');
+    const btnDarkroomToggle = document.getElementById('btnDarkroomToggle');
+    const darkroomPanel = document.getElementById('darkroomPanel');
+    const btnCloseDarkroom = document.getElementById('btnCloseDarkroom');
+    const btnResetDarkroom = document.getElementById('btnResetDarkroom');
+    const sliderGray = document.getElementById('sliderGray');
+    const labelGrayVal = document.getElementById('labelGrayVal');
+    const sliderR = document.getElementById('sliderR');
+    const sliderG = document.getElementById('sliderG');
+    const sliderB = document.getElementById('sliderB');
+    const valR = document.getElementById('valR');
+    const valG = document.getElementById('valG');
+    const valB = document.getElementById('valB');
+    const labelHexVal = document.getElementById('labelHexVal');
+    const btnScopeCanvas = document.getElementById('btnScopeCanvas');
+    const btnScopeAll = document.getElementById('btnScopeAll');
 
     // 模式切換鈕
     const tabGenerate = document.getElementById('tabGenerate');
@@ -1246,6 +1355,160 @@
     });
 
     initTheme();
+
+    // -------------------------------------------------------------
+    // 5.5 暗房背景調色系統 (灰階 / RGB / 經典預設)
+    // -------------------------------------------------------------
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(x => {
+        const hex = Math.max(0, Math.min(255, x)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+      }).join('').toUpperCase();
+    }
+
+    function applyDarkroomColor(r, g, b, scope = 'canvas') {
+      const hex = rgbToHex(r, g, b);
+      if (labelHexVal) labelHexVal.innerText = hex;
+      if (valR) valR.innerText = r;
+      if (valG) valG.innerText = g;
+      if (valB) valB.innerText = b;
+      const grayAvg = Math.round((r + g + b) / 3);
+      if (sliderGray) sliderGray.value = grayAvg;
+      if (labelGrayVal) labelGrayVal.innerText = `${Math.round((grayAvg / 255) * 100)}% (RGB ${grayAvg})`;
+
+      if (scope === 'all') {
+        document.body.style.backgroundColor = hex;
+        if (canvasCard) canvasCard.style.backgroundColor = hex;
+        if (btnScopeAll) btnScopeAll.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs';
+        if (btnScopeCanvas) btnScopeCanvas.className = 'px-2 py-0.5 text-[10px] rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+      } else {
+        document.body.style.backgroundColor = '';
+        if (canvasCard) canvasCard.style.backgroundColor = hex;
+        if (btnScopeCanvas) btnScopeCanvas.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs';
+        if (btnScopeAll) btnScopeAll.className = 'px-2 py-0.5 text-[10px] rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+      }
+
+      localStorage.setItem('darkroom_config', JSON.stringify({ r, g, b, scope, enabled: true }));
+    }
+
+    function resetDarkroomColor() {
+      if (canvasCard) canvasCard.style.backgroundColor = '';
+      document.body.style.backgroundColor = '';
+      localStorage.removeItem('darkroom_config');
+      if (sliderR) sliderR.value = 46;
+      if (sliderG) sliderG.value = 46;
+      if (sliderB) sliderB.value = 46;
+      if (sliderGray) sliderGray.value = 46;
+      if (labelHexVal) labelHexVal.innerText = '#2E2E2E';
+      if (valR) valR.innerText = 46;
+      if (valG) valG.innerText = 46;
+      if (valB) valB.innerText = 46;
+      if (labelGrayVal) labelGrayVal.innerText = '18% (RGB 46)';
+      if (btnScopeCanvas) btnScopeCanvas.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-xs';
+      if (btnScopeAll) btnScopeAll.className = 'px-2 py-0.5 text-[10px] rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+      showStatus('已恢復預設背景色調', 'info');
+    }
+
+    function initDarkroom() {
+      const saved = localStorage.getItem('darkroom_config');
+      if (saved) {
+        try {
+          const cfg = JSON.parse(saved);
+          if (cfg && cfg.enabled) {
+            if (sliderR) sliderR.value = cfg.r;
+            if (sliderG) sliderG.value = cfg.g;
+            if (sliderB) sliderB.value = cfg.b;
+            applyDarkroomColor(cfg.r, cfg.g, cfg.b, cfg.scope || 'canvas');
+          }
+        } catch (e) {
+          console.error('Failed to parse darkroom_config', e);
+        }
+      }
+    }
+
+    if (btnDarkroomToggle) {
+      btnDarkroomToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        darkroomPanel.classList.toggle('hidden');
+      });
+    }
+
+    if (btnCloseDarkroom) {
+      btnCloseDarkroom.addEventListener('click', () => {
+        darkroomPanel.classList.add('hidden');
+      });
+    }
+
+    if (btnResetDarkroom) {
+      btnResetDarkroom.addEventListener('click', resetDarkroomColor);
+    }
+
+    document.addEventListener('click', (e) => {
+      if (darkroomPanel && !darkroomPanel.classList.contains('hidden')) {
+        if (!darkroomPanel.contains(e.target) && !btnDarkroomToggle.contains(e.target)) {
+          darkroomPanel.classList.add('hidden');
+        }
+      }
+    });
+
+    document.querySelectorAll('.darkroom-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = parseInt(btn.getAttribute('data-r'), 10);
+        const g = parseInt(btn.getAttribute('data-g'), 10);
+        const b = parseInt(btn.getAttribute('data-b'), 10);
+        if (sliderR) sliderR.value = r;
+        if (sliderG) sliderG.value = g;
+        if (sliderB) sliderB.value = b;
+        const saved = localStorage.getItem('darkroom_config');
+        const currentScope = saved ? (JSON.parse(saved).scope || 'canvas') : 'canvas';
+        applyDarkroomColor(r, g, b, currentScope);
+      });
+    });
+
+    if (sliderGray) {
+      sliderGray.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (sliderR) sliderR.value = val;
+        if (sliderG) sliderG.value = val;
+        if (sliderB) sliderB.value = val;
+        const saved = localStorage.getItem('darkroom_config');
+        const currentScope = saved ? (JSON.parse(saved).scope || 'canvas') : 'canvas';
+        applyDarkroomColor(val, val, val, currentScope);
+      });
+    }
+
+    function handleRgbInput() {
+      const r = parseInt(sliderR.value, 10);
+      const g = parseInt(sliderG.value, 10);
+      const b = parseInt(sliderB.value, 10);
+      const saved = localStorage.getItem('darkroom_config');
+      const currentScope = saved ? (JSON.parse(saved).scope || 'canvas') : 'canvas';
+      applyDarkroomColor(r, g, b, currentScope);
+    }
+
+    if (sliderR) sliderR.addEventListener('input', handleRgbInput);
+    if (sliderG) sliderG.addEventListener('input', handleRgbInput);
+    if (sliderB) sliderB.addEventListener('input', handleRgbInput);
+
+    if (btnScopeCanvas) {
+      btnScopeCanvas.addEventListener('click', () => {
+        const r = parseInt(sliderR.value, 10);
+        const g = parseInt(sliderG.value, 10);
+        const b = parseInt(sliderB.value, 10);
+        applyDarkroomColor(r, g, b, 'canvas');
+      });
+    }
+
+    if (btnScopeAll) {
+      btnScopeAll.addEventListener('click', () => {
+        const r = parseInt(sliderR.value, 10);
+        const g = parseInt(sliderG.value, 10);
+        const b = parseInt(sliderB.value, 10);
+        applyDarkroomColor(r, g, b, 'all');
+      });
+    }
+
+    initDarkroom();
 
     // -------------------------------------------------------------
     // 6. 初始化 Fabric.js 畫布與縮放架構
