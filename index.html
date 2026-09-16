@@ -94,7 +94,7 @@
             GPT Image 2.5 視覺創作與圖像修復工作台
           </h1>
           <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 局部遮罩重繪 ‧ 本機永久自動保存
+            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 施政圖卡 & 政治攻防深度 Prompt ‧ 以圖生圖
           </p>
         </div>
       </div>
@@ -131,7 +131,7 @@
       <!-- 模式切換分頁 -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 flex gap-1 shadow-sm transition-colors">
         <button id="tabGenerate" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md">
-          <i data-lucide="wand-2" class="w-4 h-4"></i> 全新生圖
+          <i data-lucide="wand-2" class="w-4 h-4"></i> 全新生圖 / 以圖生圖
         </button>
         <button id="tabEdit" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60">
           <i data-lucide="brush" class="w-4 h-4"></i> 局部遮罩修圖
@@ -161,9 +161,9 @@
           <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">圖片尺寸 / 比例</label>
             <select id="selectResolution" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="1536x864">16:9 橫圖 (1536x864) 施政簡報</option>
+              <option value="1024x1024">1:1 正方形 (1024x1024) 攻防梗圖</option>
               <option value="864x1536" selected>9:16 直式 (864x1536) 早安/文宣</option>
-              <option value="1024x1024">1:1 正方形 (1024x1024)</option>
-              <option value="1536x864">16:9 橫圖 (1536x864)</option>
               <option value="1024x768">4:3 標準 (1024x768)</option>
               <option value="1792x1024">超寬文宣 (1792x1024)</option>
             </select>
@@ -219,7 +219,87 @@
           </div>
         </div>
 
-        <!-- 局部修圖提示引導 -->
+        <!-- ================= 深度 Prompt 專業模式 (.md 規範驅動) ================= -->
+        <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5 transition-colors">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i> 專業圖卡深度 Prompt 模式
+            </span>
+            <span class="text-[10px] text-slate-400">點選自動套用</span>
+          </div>
+
+          <!-- 兩個 .md 模式快捷切換按鈕 -->
+          <div class="grid grid-cols-2 gap-2">
+            <!-- 模式 1：官方高質感施政圖卡 (policy-infographics) -->
+            <button type="button" id="btnModePolicy" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-emerald-500 text-left transition-all group flex flex-col gap-1 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 flex items-center gap-1">
+                  🏛️ 官方施政圖卡
+                </span>
+                <span id="dotPolicy" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">重大建設/半屏融圖/六都評比</p>
+            </button>
+
+            <!-- 模式 2：政治攻防與事實澄清 (political-meme) -->
+            <button type="button" id="btnModeMeme" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-rose-500 text-left transition-all group flex flex-col gap-1 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-rose-500 flex items-center gap-1">
+                  ⚔️ 政治攻防澄清
+                </span>
+                <span id="dotMeme" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+              </div>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">新聞打臉/迴旋鏢/雙標對比</p>
+            </button>
+          </div>
+
+          <!-- 展開的版型子選單 -->
+          <div id="subTemplateBox" class="hidden flex flex-col gap-1.5 pt-1.5 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-150">
+            <div class="flex items-center justify-between">
+              <span id="subTemplateLabel" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">切換版型範本：</span>
+              <button type="button" id="btnResetMode" class="text-[10px] text-slate-400 hover:text-rose-500 transition-colors">恢復自由輸入</button>
+            </div>
+            <select id="selectSubTemplate" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+            </select>
+          </div>
+        </div>
+
+        <!-- ================= 參考圖片 (以圖生圖 Image-to-Image) 模組 ================= -->
+        <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2 transition-colors">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer">
+              <i data-lucide="image-plus" class="w-3.5 h-3.5 text-teal-500"></i> 參考圖片 (以圖生圖 / 墊圖引導)
+            </label>
+            <span class="text-[10px] text-slate-400">可選</span>
+          </div>
+
+          <!-- 上傳拖放區塊 -->
+          <div id="refImageUploadArea" class="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 rounded-xl p-3 text-center cursor-pointer transition-colors bg-white/60 dark:bg-slate-900/60 group">
+            <input type="file" id="refImageInput" accept="image/*" class="hidden">
+            <div class="flex flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400">
+              <i data-lucide="upload-cloud" class="w-5 h-5 text-teal-500 group-hover:scale-110 transition-transform"></i>
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">點擊上傳或拖放參考圖</p>
+              <p class="text-[10px] text-slate-400">上傳後 GPT 2.5 將依此圖構圖/風格以圖生圖</p>
+            </div>
+          </div>
+
+          <!-- 預覽區塊 -->
+          <div id="refImagePreviewArea" class="hidden flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm">
+            <img id="refImageThumb" src="" class="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">以圖生圖已啟用</span>
+              </div>
+              <p id="refImageName" class="text-xs font-medium text-slate-700 dark:text-slate-300 truncate mt-0.5">image.png</p>
+              <p class="text-[10px] text-slate-400 truncate">生成時將以該圖為基底進行創作</p>
+            </div>
+            <button type="button" id="btnRemoveRefImage" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="移除參考圖片">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 局部修圖提示引導 (修圖分頁顯示) -->
         <div id="inpaintGuideBox" class="hidden bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-200">
           <p class="font-bold flex items-center gap-1.5 mb-1">
             <i data-lucide="info" class="w-3.5 h-3.5"></i> 局部修改操作指引：
@@ -481,24 +561,24 @@
       
       <div class="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 本機永久儲存 (IndexedDB)：</p>
+          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 兩大深度 Prompt 規範整合：</p>
           <ul class="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
-            <li>每張生成的原圖與修改圖，都會自動轉為高畫質資料永久存入您電腦瀏覽器的資料庫中。</li>
-            <li><strong>即使重新整理網頁、關掉瀏覽器或重開機，歷史圖片依然全部保留</strong>！點擊隨時重新載入畫布二次修圖。</li>
+            <li><strong>🏛️ 官方施政圖卡 (policy-infographics)</strong>：自動套用 16:9 簡報大景、科技深藍/翡翠綠漸層背景、白金雙色主標題、圓形勾選框與純淨無雜質規範。</li>
+            <li><strong>⚔️ 政治攻防澄清 (political-meme)</strong>：自動套用 1:1 黃金方型、新聞截圖鐵證打臉、尷尬表情迴旋鏢、2-1 卡片與紅字畫重點。</li>
           </ul>
         </div>
 
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-amber-600 dark:text-amber-400 mb-1">2. 局部修圖支援「上一步 (Undo)」：</p>
+          <p class="font-bold text-teal-600 dark:text-teal-400 mb-1">2. 參考圖片以圖生圖 (Image-to-Image)：</p>
           <p class="text-slate-600 dark:text-slate-400">
-            切換至「局部遮罩修圖」，使用紅色筆刷塗抹想要修改的局部。若畫錯不必重來，直接點擊「<strong>上一步</strong>」（或按鍵盤 <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Cmd+Z</code> / <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Ctrl+Z</code>）即可撤銷！
+            上傳人物照、新聞截圖或實景照片作為參考圖，GPT Image 2.5 會自動鎖定其構圖與主體特徵，並根據您的提示詞進行以圖生圖！
           </p>
         </div>
 
         <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          <p class="font-bold text-teal-600 dark:text-teal-400 mb-1">3. 最適全圖與縮放控制：</p>
+          <p class="font-bold text-amber-600 dark:text-amber-400 mb-1">3. 本機永久資料庫 (IndexedDB)：</p>
           <p class="text-slate-600 dark:text-slate-400">
-            9:16 直式早安圖或任何比例圖，點擊畫布右上角「<strong>最適全圖</strong>」即可滿版全覽不裁切，使用滑鼠滾輪或放大縮小鈕可檢視細部細節。
+            每張生成或修改的成品都會永久安全保存在電腦瀏覽器中，無論重新整理、關機都不會遺失，隨時點選縮圖重修！
           </p>
         </div>
       </div>
@@ -522,6 +602,10 @@
     let maskUndoStack = [];
     let maskRedoStack = [];
 
+    // 參考圖片（以圖生圖）狀態
+    let referenceImageFile = null;
+    let referenceImageDataUrl = null;
+
     // 初始化 Lucide 圖標
     lucide.createIcons();
 
@@ -544,6 +628,23 @@
     const chkAutoDownload = document.getElementById('chkAutoDownload');
     const canvasViewport = document.getElementById('canvasViewport');
     const canvasWrapper = document.getElementById('canvasWrapper');
+
+    // 深度 Prompt 模式元素
+    const btnModePolicy = document.getElementById('btnModePolicy');
+    const btnModeMeme = document.getElementById('btnModeMeme');
+    const dotPolicy = document.getElementById('dotPolicy');
+    const dotMeme = document.getElementById('dotMeme');
+    const subTemplateBox = document.getElementById('subTemplateBox');
+    const selectSubTemplate = document.getElementById('selectSubTemplate');
+    const btnResetMode = document.getElementById('btnResetMode');
+
+    // 參考圖片元素
+    const refImageUploadArea = document.getElementById('refImageUploadArea');
+    const refImageInput = document.getElementById('refImageInput');
+    const refImagePreviewArea = document.getElementById('refImagePreviewArea');
+    const refImageThumb = document.getElementById('refImageThumb');
+    const refImageName = document.getElementById('refImageName');
+    const btnRemoveRefImage = document.getElementById('btnRemoveRefImage');
 
     // 縮放控制項
     const btnZoomIn = document.getElementById('btnZoomIn');
@@ -600,7 +701,201 @@
     const btnCloseHelpModal = document.getElementById('btnCloseHelpModal');
 
     // -------------------------------------------------------------
-    // 2. 本機永久資料庫 (IndexedDB) - 核心持久化模組
+    // 2. 深度 Prompt 範本資料庫 (萃取自本地兩大 .md 規範)
+    // -------------------------------------------------------------
+    const SKILL_TEMPLATES = {
+      policy: {
+        name: '官方高質感施政圖卡 (policy-infographics)',
+        aspect: '1536x864', // 16:9
+        options: [
+          {
+            title: '【重大建設】半屏實景融圖＋左側核心亮點 (16:9)',
+            prompt: 'A world-class municipal executive policy report presentation infographic slide in 16:9 widescreen format. Clean minimalist design with NO watermarks, NO corner stamps, and NO signatures. Master color scheme is modern deep royal navy blue gradient (#0A2540 to #1E3A8A). Left side (55% width) features bold, clean typography: ultra-large bold heavy gothic headline in pure white and luminous golden yellow (#FACC15): "產業轉型 ‧ 從賽馬場到晶圓廠". Below headline, 3 highlight bullet points with yellow circular checkmarks (✔) in bright gold: "✔ 4年迎來台積電2奈米先進製程", "✔ 串聯半導體S廊帶打造完整生態系", "✔ 招商投資突破8,000億元創造6萬高薪就業". Key numbers magnified 2.5x in glowing gold. Right side (45% width) showcases authentic high-definition infrastructure photography of modern high-tech semiconductor plant, smoothly fading into the left blue background. Sharp typography, corporate executive presentation perfection, 8k resolution.'
+          },
+          {
+            title: '【地標活動】全屏大景空拍＋下緣漸層資訊帶 (16:9)',
+            prompt: 'A breathtaking municipal policy briefing presentation infographic in 16:9 aspect ratio. Clean aesthetic with NO corner text, NO watermarks. Full-bleed background is an authentic high-resolution aerial photograph of a massive stadium concert at night, filled with 50,000 glowing lightsticks and vibrant stage lights. Bottom 40% has a smooth deep indigo-navy gradient scrim overlay (#1E1B4B to #312E81). Across lower third, giant heavy gothic title in bold white and warm amber: "演唱會經濟 擦亮城市品牌". Neatly arranged bullet points below with yellow checkmark badges: "✔ 吸引逾 300 萬觀光人次", "✔ 創造逾 100 億元 觀光經濟產值", "✔ 平均疏運時間大幅縮短至 60 分鐘". Sharp focus, clean infographic overlay, aesthetic layout, 8k resolution.'
+          },
+          {
+            title: '【施政數據】綠色系六都評比柱狀圖與評比 (16:9)',
+            prompt: 'A world-class government statistical infographic slide in 16:9 widescreen ratio. Deep emerald forest green color palette (#059669 to #064E3B). Left side features a huge bold headline: "穩健財政 支撐城市建設", with summary bullet points. Right side shows a clean 6-city comparative horizontal bar chart where the featured city is highlighted in glowing luminous yellow with a badge "六都第一", while other bars are subtle muted slate gray. A prominent bold neon trend arrow indicating "連續零舉借 累計還債逾百億 ▲". Clean, sharp corporate executive aesthetic, zero watermarks, 8k resolution.'
+          }
+        ]
+      },
+      meme: {
+        name: '政治攻防與事實澄清 (political-meme-generator)',
+        aspect: '1024x1024', // 1:1
+        options: [
+          {
+            title: '【新聞打臉】新聞截圖鐵證＋迴旋鏢卡 (1:1)',
+            prompt: 'A high-impact official Taiwanese political counter-attack infographic graphic image in perfect 1:1 square ratio. Top header in bold yellow text: "【鐵證如山】事實查證 責任源頭真相大白！". Middle section: Left side features an authentic news report screenshot layout with media badge. Right side features a photorealistic portrait of the political opponent with an AWKWARD, EMBARRASSED, flustered expression, with a glowing boomerang hitting them. Below image section, 3 text cards arranged neatly in a 2-1 layout with key terms highlighted in bold RED text: 1. "☑ 對手急著抹黑帶風向 ➔ 結果迴旋鏢打自己！", 2. "☑ 官方數據鐵證公開 ➔ 責任歸屬清清楚楚！", 3. "☑ 烏龍指控不攻自破 ➔ 市民眼睛雪亮！". Bold red stamp reading "【源頭打臉】". Bottom yellow banner with BOLD LARGE black and red headline text. High contrast, clean typography, 8k resolution.'
+          },
+          {
+            title: '【誠信視察】現場真實照片直接壓字澄清 (1:1)',
+            prompt: 'An authoritative official municipal inspection fact-check infographic in 1:1 square ratio. Background is an authentic, crisp documentary photograph of official government inspectors conducting rigorous on-site water quality and safety testing with professional equipment. Crisp bold white title at the top: "全面稽查 ‧ 守護市民健康". Floating frosted-glass badges with green checkmarks: "☑ 檢測結果全數合規", "☑ 24小時即時數據公開透明". A prominent official red circular seal stamped in the corner reading "【嚴格把關】". Professional, trustworthy, daylight lighting, clean graphic design, 8k resolution.'
+          },
+          {
+            title: '【雙標檢驗】左右雙標對比型 (1:1)',
+            prompt: 'A dynamic split-screen political comparison graphic in 1:1 ratio. Left side (Blue tint) shows political opponents making excuses during crisis. Right side (Green tint) shows dedicated executive leadership working on the frontlines of disaster prevention. Center features a bold vertical dark dividing bar with text "市民看得很清楚". High contrast, jagged comparison speech bubbles, bold black and yellow headline banners, sharp documentary aesthetic, 8k resolution.'
+          }
+        ]
+      }
+    };
+
+    let activeSkillMode = null; // 'policy' | 'meme' | null
+
+    function setSkillMode(modeKey) {
+      if (activeSkillMode === modeKey) {
+        resetSkillMode();
+        return;
+      }
+      activeSkillMode = modeKey;
+      const config = SKILL_TEMPLATES[modeKey];
+
+      if (modeKey === 'policy') {
+        btnModePolicy.classList.add('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
+        dotPolicy.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-sm';
+        btnModeMeme.classList.remove('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
+        dotMeme.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+      } else {
+        btnModeMeme.classList.add('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
+        dotMeme.className = 'w-2 h-2 rounded-full bg-rose-500 shadow-sm';
+        btnModePolicy.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
+        dotPolicy.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+      }
+
+      // 自動切換最佳比例
+      selectResolution.value = config.aspect;
+
+      // 填充子選單
+      selectSubTemplate.innerHTML = '';
+      config.options.forEach((opt, idx) => {
+        const optionEl = document.createElement('option');
+        optionEl.value = idx;
+        optionEl.innerText = opt.title;
+        selectSubTemplate.appendChild(optionEl);
+      });
+
+      subTemplateBox.classList.remove('hidden');
+
+      // 載入第一個模板 prompt
+      inputPrompt.value = config.options[0].prompt;
+      showStatus(`已載入【${config.name}】深度 Prompt 規範與推薦比例 (${config.aspect})`, 'success');
+    }
+
+    function resetSkillMode() {
+      activeSkillMode = null;
+      btnModePolicy.classList.remove('border-emerald-500', 'bg-emerald-50/50', 'dark:bg-emerald-950/40');
+      dotPolicy.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+      btnModeMeme.classList.remove('border-rose-500', 'bg-rose-50/50', 'dark:bg-rose-950/40');
+      dotMeme.className = 'w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700';
+      subTemplateBox.classList.add('hidden');
+      showStatus('已退出深度模式，可自由輸入 Prompt', 'info');
+    }
+
+    btnModePolicy.addEventListener('click', () => setSkillMode('policy'));
+    btnModeMeme.addEventListener('click', () => setSkillMode('meme'));
+    btnResetMode.addEventListener('click', resetSkillMode);
+
+    selectSubTemplate.addEventListener('change', (e) => {
+      if (activeSkillMode && SKILL_TEMPLATES[activeSkillMode]) {
+        const idx = parseInt(e.target.value, 10);
+        const item = SKILL_TEMPLATES[activeSkillMode].options[idx];
+        if (item) {
+          inputPrompt.value = item.prompt;
+          showStatus(`已切換為：${item.title}`, 'info');
+        }
+      }
+    });
+
+    // -------------------------------------------------------------
+    // 3. 參考圖片（以圖生圖 Image-to-Image）模組
+    // -------------------------------------------------------------
+    refImageUploadArea.addEventListener('click', () => refImageInput.click());
+
+    refImageInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      handleRefImageUpload(file);
+    });
+
+    // 支援拖放上傳參考圖
+    refImageUploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      refImageUploadArea.classList.add('border-teal-500', 'bg-teal-50/20');
+    });
+
+    refImageUploadArea.addEventListener('dragleave', () => {
+      refImageUploadArea.classList.remove('border-teal-500', 'bg-teal-50/20');
+    });
+
+    refImageUploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      refImageUploadArea.classList.remove('border-teal-500', 'bg-teal-50/20');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleRefImageUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleRefImageUpload(file) {
+      if (!file.type.startsWith('image/')) {
+        showStatus('請上傳圖片檔案 (PNG, JPG, WebP)！', 'error');
+        return;
+      }
+      referenceImageFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        referenceImageDataUrl = evt.target.result;
+        refImageThumb.src = referenceImageDataUrl;
+        refImageName.innerText = file.name;
+        refImageUploadArea.classList.add('hidden');
+        refImagePreviewArea.classList.remove('hidden');
+
+        // 更新按鈕提示
+        if (currentMode === 'generate') {
+          btnExecuteText.innerText = '✨ 依據參考圖生成 (以圖生圖)';
+        }
+        showStatus('✅ 參考圖片上傳成功！GPT 2.5 將以此圖為基底進行以圖生圖', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    btnRemoveRefImage.addEventListener('click', () => {
+      referenceImageFile = null;
+      referenceImageDataUrl = null;
+      refImageInput.value = '';
+      refImagePreviewArea.classList.add('hidden');
+      refImageUploadArea.classList.remove('hidden');
+      if (currentMode === 'generate') {
+        btnExecuteText.innerText = '立即生成圖片 (GPT 2.5)';
+      }
+      showStatus('已移除參考圖片，恢復純文字生圖模式', 'info');
+    });
+
+    // 將上傳的參考圖轉換為符合目標比例的標準 PNG Blob
+    async function getPreparedReferenceBlob(targetWidth, targetHeight) {
+      if (!referenceImageDataUrl) return null;
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = targetWidth;
+          c.height = targetHeight;
+          const ctx = c.getContext('2d');
+          
+          const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+          const x = (targetWidth - img.width * scale) / 2;
+          const y = (targetHeight - img.height * scale) / 2;
+          
+          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          c.toBlob((blob) => resolve(blob), 'image/png');
+        };
+        img.src = referenceImageDataUrl;
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 4. 本機永久資料庫 (IndexedDB)
     // -------------------------------------------------------------
     const DB_NAME = 'VisualStudioHistoryDB';
     const DB_VERSION = 1;
@@ -693,7 +988,6 @@
       }
     }
 
-    // 確保外部遠端圖片連結轉換為永久 Base64 DataURL
     async function ensureDataUrl(url) {
       if (!url) return '';
       if (url.startsWith('data:')) return url;
@@ -711,7 +1005,6 @@
       }
     }
 
-    // 重新渲染歷史縮圖庫
     async function refreshGalleryFromDB() {
       const list = await loadAllFromDB();
       historyCount.innerText = list.length;
@@ -751,7 +1044,6 @@
           </div>
         `;
 
-        // 載入按鈕
         card.querySelector('.btn-load').addEventListener('click', (e) => {
           e.stopPropagation();
           const [w, h] = (item.size || '864x1536').split('x').map(Number);
@@ -760,7 +1052,6 @@
           showStatus('已將歷史圖卡重新加載至畫布！', 'info');
         });
 
-        // 點擊整張卡片也是載入
         card.addEventListener('click', () => {
           const [w, h] = (item.size || '864x1536').split('x').map(Number);
           loadImageToCanvas(item.dataUrl, w, h);
@@ -768,7 +1059,6 @@
           showStatus('已將歷史圖卡重新加載至畫布！', 'info');
         });
 
-        // 下載按鈕
         card.querySelector('.btn-dl').addEventListener('click', (e) => {
           e.stopPropagation();
           const link = document.createElement('a');
@@ -778,7 +1068,6 @@
           showStatus('📥 已下載歷史原圖', 'success');
         });
 
-        // 刪除按鈕
         card.querySelector('.btn-del').addEventListener('click', async (e) => {
           e.stopPropagation();
           if (confirm('確定要從本機資料庫刪除這張歷史圖卡嗎？')) {
@@ -794,7 +1083,6 @@
       lucide.createIcons();
     }
 
-    // 清空歷史按鈕
     document.getElementById('btnClearHistory').addEventListener('click', async () => {
       if (confirm('⚠️ 警告：這將會清除本機所有已保存的歷史圖卡！確定要清空嗎？')) {
         await clearAllFromDB();
@@ -803,7 +1091,6 @@
       }
     });
 
-    // 自動下載備份功能
     function triggerAutoDownload(dataUrl, prompt) {
       try {
         const link = document.createElement('a');
@@ -816,7 +1103,7 @@
     }
 
     // -------------------------------------------------------------
-    // 3. 主題切換 (Light / Dark Mode)
+    // 5. 主題切換 (Light / Dark Mode)
     // -------------------------------------------------------------
     function initTheme() {
       const savedTheme = localStorage.getItem('app_theme') || 'dark';
@@ -843,7 +1130,7 @@
     initTheme();
 
     // -------------------------------------------------------------
-    // 4. 初始化 Fabric.js 畫布與縮放架構
+    // 6. 初始化 Fabric.js 畫布與縮放架構
     // -------------------------------------------------------------
     function initCanvas(nativeWidth = 864, nativeHeight = 1536) {
       if (canvas) {
@@ -890,7 +1177,7 @@
     }
 
     // -------------------------------------------------------------
-    // 5. 縮放 (Zoom & Fit)
+    // 7. 縮放 (Zoom & Fit)
     // -------------------------------------------------------------
     function applyZoom(zoom) {
       zoom = Math.max(0.15, Math.min(zoom, 3.0));
@@ -939,7 +1226,7 @@
     }, { passive: false });
 
     // -------------------------------------------------------------
-    // 6. 遮罩塗抹「上一步 (Undo) / 下一步 (Redo)」系統
+    // 8. 遮罩塗抹「上一步 (Undo) / 下一步 (Redo)」系統
     // -------------------------------------------------------------
     function updateUndoRedoUI() {
       btnUndoMask.disabled = maskUndoStack.length === 0;
@@ -985,7 +1272,7 @@
     });
 
     // -------------------------------------------------------------
-    // 7. API Key 管理 (localStorage)
+    // 9. API Key 管理 (localStorage)
     // -------------------------------------------------------------
     function getApiKey() {
       return localStorage.getItem('openai_api_key') || '';
@@ -1039,7 +1326,7 @@
     btnCloseHelpModal.addEventListener('click', () => helpModal.classList.add('hidden'));
 
     // -------------------------------------------------------------
-    // 8. 模式切換與工具列
+    // 10. 模式切換與工具列
     // -------------------------------------------------------------
     tabGenerate.addEventListener('click', () => switchMode('generate'));
     tabEdit.addEventListener('click', () => switchMode('edit'));
@@ -1049,7 +1336,7 @@
       if (mode === 'generate') {
         tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
         tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
-        btnExecuteText.innerText = "立即生成圖片 (GPT 2.5)";
+        btnExecuteText.innerText = referenceImageDataUrl ? "✨ 依據參考圖生成 (以圖生圖)" : "立即生成圖片 (GPT 2.5)";
         promptLabel.innerHTML = '<i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)';
         inpaintGuideBox.classList.add('hidden');
         setTool('select');
@@ -1160,7 +1447,7 @@
     });
 
     // -------------------------------------------------------------
-    // 9. 文字圖層系統
+    // 11. 文字圖層系統
     // -------------------------------------------------------------
     function addTextToCanvas(text, pos = 'custom') {
       const cWidth = originalNativeW;
@@ -1273,7 +1560,7 @@
     });
 
     // -------------------------------------------------------------
-    // 10. 載入圖片至畫布與自動適應全圖
+    // 12. 載入圖片至畫布與自動適應全圖
     // -------------------------------------------------------------
     function loadImageToCanvas(imgUrl, customWidth, customHeight) {
       fabric.Image.fromURL(imgUrl, function(img) {
@@ -1316,7 +1603,7 @@
     });
 
     // -------------------------------------------------------------
-    // 11. OpenAI API 核心連線 (生圖與局部修圖)
+    // 13. OpenAI API 核心連線 (純文字生圖 / 以圖生圖 / 局部修圖)
     // -------------------------------------------------------------
     btnExecute.addEventListener('click', async () => {
       const apiKey = getApiKey();
@@ -1334,13 +1621,19 @@
       }
 
       if (currentMode === 'generate') {
-        await executeGeneration(apiKey, prompt);
+        if (referenceImageDataUrl) {
+          // 以圖生圖 (Image-to-Image 帶參考圖片)
+          await executeImageToImage(apiKey, prompt);
+        } else {
+          // 純文字生圖 (Text-to-Image)
+          await executeGeneration(apiKey, prompt);
+        }
       } else {
         await executeInpaint(apiKey, prompt);
       }
     });
 
-    // 11.1 全新生圖
+    // 13.1 純文字生圖
     async function executeGeneration(apiKey, prompt) {
       setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
       try {
@@ -1387,22 +1680,18 @@
           rawUrl = imgData.url;
         }
 
-        // 轉為永久 Base64 DataURL，確保存入 IndexedDB 後永遠不過期
         const permanentDataUrl = await ensureDataUrl(rawUrl);
-
         const [w, h] = size.split('x').map(Number);
         loadImageToCanvas(permanentDataUrl, w, h);
 
-        // 存入本機永久資料庫 (IndexedDB)
         await saveImageToDB(permanentDataUrl, prompt, model, size);
         refreshGalleryFromDB();
 
-        // 自動下載備份到本機電腦 (若有勾選)
         if (chkAutoDownload.checked) {
           triggerAutoDownload(permanentDataUrl, prompt);
         }
 
-        showStatus('🎉 圖片生成成功！已永久保存至本機資料庫，重整絕不遺失', 'success');
+        showStatus('🎉 圖片生成成功！已永久保存至本機資料庫', 'success');
       } catch (err) {
         console.error('生圖失敗:', err);
         showStatus(`❌ 生成失敗：${err.message}`, 'error');
@@ -1411,7 +1700,65 @@
       }
     }
 
-    // 11.2 局部遮罩修圖
+    // 13.2 以圖生圖 (Image-to-Image with Reference Image via /v1/images/edits)
+    async function executeImageToImage(apiKey, prompt) {
+      setLoading(true, '正在依據參考圖片透過 GPT Image 2.5 以圖生圖中...');
+      try {
+        const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-flare';
+        const size = selectResolution.value;
+        const [targetW, targetH] = size.split('x').map(Number);
+
+        // 轉換為標準尺寸 PNG Blob
+        const refBlob = await getPreparedReferenceBlob(targetW, targetH);
+
+        const formData = new FormData();
+        formData.append('image', refBlob, 'reference.png');
+        formData.append('prompt', prompt);
+        formData.append('model', model);
+        formData.append('n', '1');
+        formData.append('size', size);
+
+        const response = await fetch('https://api.openai.com/v1/images/edits', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: formData
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error?.message || `以圖生圖失敗，API 代碼: ${response.status}`);
+        }
+
+        const imgData = data.data[0];
+        let rawUrl = '';
+        if (imgData.b64_json) {
+          rawUrl = `data:image/png;base64,${imgData.b64_json}`;
+        } else if (imgData.url) {
+          rawUrl = imgData.url;
+        }
+
+        const permanentDataUrl = await ensureDataUrl(rawUrl);
+
+        loadImageToCanvas(permanentDataUrl, targetW, targetH);
+        await saveImageToDB(permanentDataUrl, '[以圖生圖] ' + prompt, model, size);
+        refreshGalleryFromDB();
+
+        if (chkAutoDownload.checked) {
+          triggerAutoDownload(permanentDataUrl, prompt);
+        }
+
+        showStatus('✨ 以圖生圖成功！已依據參考圖片與 Prompt 融合生成新圖', 'success');
+      } catch (err) {
+        console.error('以圖生圖失敗:', err);
+        showStatus(`❌ 以圖生圖失敗：${err.message}`, 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // 13.3 局部遮罩修圖
     async function executeInpaint(apiKey, prompt) {
       if (!currentImageObj) {
         showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
@@ -1499,7 +1846,6 @@
         clearMaskPaths();
         loadImageToCanvas(permanentDataUrl, nativeW, nativeH);
 
-        // 存入 IndexedDB
         await saveImageToDB(permanentDataUrl, '局部修改: ' + prompt, model, `${nativeW}x${nativeH}`);
         refreshGalleryFromDB();
 
@@ -1518,7 +1864,7 @@
     }
 
     // -------------------------------------------------------------
-    // 12. 存檔與導出
+    // 14. 存檔與導出
     // -------------------------------------------------------------
     btnDownload.addEventListener('click', () => {
       const savedZoom = currentZoom;
@@ -1571,13 +1917,16 @@
       }
     });
 
-    // 狀態與輔助控制
     function setLoading(isLoading, message = '') {
       btnExecute.disabled = isLoading;
       if (isLoading) {
         btnExecuteText.innerText = message || '處理中...';
       } else {
-        btnExecuteText.innerText = currentMode === 'generate' ? '立即生成圖片 (GPT 2.5)' : '開始局部修圖 (AI Inpaint)';
+        if (currentMode === 'generate') {
+          btnExecuteText.innerText = referenceImageDataUrl ? '✨ 依據參考圖生成 (以圖生圖)' : '立即生成圖片 (GPT 2.5)';
+        } else {
+          btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
+        }
       }
     }
 
@@ -1605,11 +1954,10 @@
     }
 
     // -------------------------------------------------------------
-    // 13. 應用程式啟動初始化
+    // 15. 應用程式啟動初始化
     // -------------------------------------------------------------
     initCanvas(864, 1536);
     updateKeyStatusUI();
-    // 啟動時自動從 IndexedDB 載入所有歷史圖片！
     refreshGalleryFromDB();
   </script>
 </body>
