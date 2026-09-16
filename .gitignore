@@ -1,0 +1,15 @@
+# 本機敏感設定檔 (保護 API Key 不被上傳)
+.env
+*.env
+.env.local
+
+# 輸出暫存與個人圖片
+output/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# 系統檔案
+.DS_Store
+Thumbs.db
