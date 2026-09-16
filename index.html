@@ -287,37 +287,69 @@
         </div>
 
         <!-- ================= 參考圖片 (以圖生圖 Image-to-Image) 模組 ================= -->
-        <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2 transition-colors">
+        <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5 transition-colors">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="image-plus" class="w-3.5 h-3.5 text-teal-500"></i> 參考圖片 (以圖生圖 / 墊圖引導)
+              <i data-lucide="images" class="w-3.5 h-3.5 text-teal-500"></i> 參考素材 (以圖生圖 / 雙人合體)
             </label>
-            <span class="text-[10px] text-slate-400">可選</span>
+            <div class="flex items-center gap-2">
+              <span id="refImageCountBadge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300">0 / 5 張</span>
+              <span class="text-[10px] text-slate-400">最多 5 張</span>
+            </div>
           </div>
 
-          <!-- 上傳拖放區塊 -->
+          <!-- 上傳拖放區塊 (支援點選與拖曳多圖) -->
           <div id="refImageUploadArea" class="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 rounded-xl p-3 text-center cursor-pointer transition-colors bg-white/60 dark:bg-slate-900/60 group">
-            <input type="file" id="refImageInput" accept="image/*" class="hidden">
+            <input type="file" id="refImageInput" accept="image/*" multiple class="hidden">
             <div class="flex flex-col items-center justify-center gap-1 text-slate-500 dark:text-slate-400">
               <i data-lucide="upload-cloud" class="w-5 h-5 text-teal-500 group-hover:scale-110 transition-transform"></i>
-              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">點擊上傳或拖放參考圖</p>
-              <p class="text-[10px] text-slate-400">上傳後 GPT 2.5 將依此圖構圖/風格以圖生圖</p>
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">點擊上傳或拖放 1～5 張參考素材</p>
+              <p class="text-[10px] text-slate-400">可同時選取兩人照片、LOGO或風格圖，GPT 2.5 將融合生成</p>
             </div>
           </div>
 
-          <!-- 預覽區塊 -->
-          <div id="refImagePreviewArea" class="hidden flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 shadow-sm">
-            <img id="refImageThumb" src="" class="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">以圖生圖已啟用</span>
+          <!-- 多圖預覽列表容器 (有圖片時顯示) -->
+          <div id="refImagePreviewArea" class="hidden flex flex-col gap-2">
+            <!-- 圖片清單 (動態渲染) -->
+            <div id="refImagesList" class="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1"></div>
+
+            <!-- 控制列：新增更多 / 清空全部 / 雙人合體提示 -->
+            <div class="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800 text-[11px]">
+              <div class="flex items-center gap-2">
+                <button type="button" id="btnAddMoreRef" class="text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 font-semibold">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 繼續新增
+                </button>
+                <span class="text-slate-300 dark:text-slate-700">|</span>
+                <button type="button" id="btnClearAllRefImages" class="text-rose-500 hover:underline flex items-center gap-1">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清空全部
+                </button>
               </div>
-              <p id="refImageName" class="text-xs font-medium text-slate-700 dark:text-slate-300 truncate mt-0.5">image.png</p>
-              <p class="text-[10px] text-slate-400 truncate">生成時將以該圖為基底進行創作</p>
+              <button type="button" id="btnInsertDualPrompt" class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 font-medium" title="一鍵在 Prompt 插入素材角色分配語句">
+                <i data-lucide="sparkles" class="w-3 h-3"></i> 帶入雙人提示
+              </button>
             </div>
-            <button type="button" id="btnRemoveRefImage" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="移除參考圖片">
-              <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+
+            <!-- 傳送模式切換 (原生多圖 vs 自動拼貼) -->
+            <div class="bg-white/80 dark:bg-slate-900/80 rounded-lg p-2 border border-slate-200 dark:border-slate-800 flex flex-col gap-1 text-[11px]">
+              <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span class="font-medium flex items-center gap-1">
+                  <i data-lucide="sliders-horizontal" class="w-3 h-3 text-teal-500"></i> 素材融合模式：
+                </span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5 mt-0.5">
+                <label class="flex items-center gap-1.5 p-1.5 rounded border border-teal-500/40 bg-teal-50/50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-200 cursor-pointer text-[10.5px]">
+                  <input type="radio" name="refSendMode" value="multi" class="accent-teal-500" checked>
+                  <span class="font-semibold">原生多圖傳送</span>
+                </label>
+                <label class="flex items-center gap-1.5 p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 cursor-pointer text-[10.5px]">
+                  <input type="radio" name="refSendMode" value="composite" class="accent-teal-500">
+                  <span class="font-semibold">雙人並排合拼圖</span>
+                </label>
+              </div>
+              <p class="text-[9.5px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
+                💡 提示：在 Prompt 中指名「【素材1】為候選人，【素材2】為站台貴賓」，AI 能更精確分配兩人的位置與動作！
+              </p>
+            </div>
           </div>
         </div>
 
@@ -716,9 +748,8 @@
     let maskUndoStack = [];
     let maskRedoStack = [];
 
-    // 參考圖片（以圖生圖）狀態
-    let referenceImageFile = null;
-    let referenceImageDataUrl = null;
+    // 參考圖片（以圖生圖）狀態 (支援 1~5 張素材)
+    let referenceImages = [];
 
     // 初始化 Lucide 圖標
     lucide.createIcons();
@@ -756,13 +787,15 @@
     const selectSubTemplate = document.getElementById('selectSubTemplate');
     const btnResetMode = document.getElementById('btnResetMode');
 
-    // 參考圖片元素
+    // 參考圖片元素 (支援 1~5 張素材)
     const refImageUploadArea = document.getElementById('refImageUploadArea');
     const refImageInput = document.getElementById('refImageInput');
     const refImagePreviewArea = document.getElementById('refImagePreviewArea');
-    const refImageThumb = document.getElementById('refImageThumb');
-    const refImageName = document.getElementById('refImageName');
-    const btnRemoveRefImage = document.getElementById('btnRemoveRefImage');
+    const refImagesList = document.getElementById('refImagesList');
+    const refImageCountBadge = document.getElementById('refImageCountBadge');
+    const btnAddMoreRef = document.getElementById('btnAddMoreRef');
+    const btnClearAllRefImages = document.getElementById('btnClearAllRefImages');
+    const btnInsertDualPrompt = document.getElementById('btnInsertDualPrompt');
 
     // 縮放控制項
     const btnZoomIn = document.getElementById('btnZoomIn');
@@ -1036,17 +1069,21 @@
     });
 
     // -------------------------------------------------------------
-    // 3. 參考圖片（以圖生圖 Image-to-Image）模組
+    // 3. 參考素材（以圖生圖 Image-to-Image / 1～5 張多圖融合）模組
     // -------------------------------------------------------------
+    const MAX_REF_IMAGES = 5;
+
     refImageUploadArea.addEventListener('click', () => refImageInput.click());
+    btnAddMoreRef.addEventListener('click', () => refImageInput.click());
 
     refImageInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      handleRefImageUpload(file);
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+      handleRefImageFiles(files);
+      refImageInput.value = ''; // 重置 input 讓重複選擇同一檔案也能觸發
     });
 
-    // 支援拖放上傳參考圖
+    // 支援拖放上傳多張參考素材
     refImageUploadArea.addEventListener('dragover', (e) => {
       e.preventDefault();
       refImageUploadArea.classList.add('border-teal-500', 'bg-teal-50/20');
@@ -1059,65 +1096,272 @@
     refImageUploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       refImageUploadArea.classList.remove('border-teal-500', 'bg-teal-50/20');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleRefImageUpload(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleRefImageFiles(Array.from(e.dataTransfer.files));
       }
     });
 
-    function handleRefImageUpload(file) {
-      if (!file.type.startsWith('image/')) {
-        showStatus('請上傳圖片檔案 (PNG, JPG, WebP)！', 'error');
+    btnClearAllRefImages.addEventListener('click', clearAllRefImages);
+    btnInsertDualPrompt.addEventListener('click', insertDualPrompt);
+
+    // 處理上傳的多個素材檔案
+    async function handleRefImageFiles(files) {
+      const imageFiles = files.filter(f => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) {
+        showStatus('請上傳有效的圖片檔案 (PNG, JPG, WebP)！', 'error');
         return;
       }
-      referenceImageFile = file;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        referenceImageDataUrl = evt.target.result;
-        refImageThumb.src = referenceImageDataUrl;
-        refImageName.innerText = file.name;
-        refImageUploadArea.classList.add('hidden');
-        refImagePreviewArea.classList.remove('hidden');
 
-        // 更新按鈕提示
-        if (currentMode === 'generate') {
-          btnExecuteText.innerText = '✨ 依據參考圖生成 (以圖生圖)';
-        }
-        showStatus('✅ 參考圖片上傳成功！GPT 2.5 將以此圖為基底進行以圖生圖', 'success');
-      };
-      reader.readAsDataURL(file);
+      const availableSlots = MAX_REF_IMAGES - referenceImages.length;
+      if (availableSlots <= 0) {
+        showStatus(`已達到素材上限（最多 ${MAX_REF_IMAGES} 張）！如需更換請先移除部分素材`, 'error');
+        return;
+      }
+
+      const filesToAdd = imageFiles.slice(0, availableSlots);
+      if (imageFiles.length > availableSlots) {
+        showStatus(`最多僅能上傳 ${MAX_REF_IMAGES} 張素材，已為您載入前 ${availableSlots} 張`, 'info');
+      }
+
+      // 讀取每張圖片為 DataURL 與尺寸資訊
+      for (const file of filesToAdd) {
+        await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            const dataUrl = evt.target.result;
+            const img = new Image();
+            img.onload = () => {
+              referenceImages.push({
+                id: 'ref_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                file: file,
+                dataUrl: dataUrl,
+                name: file.name,
+                width: img.naturalWidth || img.width,
+                height: img.naturalHeight || img.height
+              });
+              resolve();
+            };
+            img.onerror = () => resolve();
+            img.src = dataUrl;
+          };
+          reader.onerror = () => resolve();
+          reader.readAsDataURL(file);
+        });
+      }
+
+      renderRefImagesList();
+      showStatus(`✅ 成功載入素材！目前共 ${referenceImages.length} 張參考素材`, 'success');
     }
 
-    btnRemoveRefImage.addEventListener('click', () => {
-      referenceImageFile = null;
-      referenceImageDataUrl = null;
-      refImageInput.value = '';
-      refImagePreviewArea.classList.add('hidden');
-      refImageUploadArea.classList.remove('hidden');
-      if (currentMode === 'generate') {
-        btnExecuteText.innerText = '立即生成圖片 (GPT 2.5)';
-      }
-      showStatus('已移除參考圖片，恢復純文字生圖模式', 'info');
-    });
+    // 渲染參考素材清單
+    function renderRefImagesList() {
+      const count = referenceImages.length;
+      refImageCountBadge.innerText = `${count} / ${MAX_REF_IMAGES} 張`;
 
-    // 將上傳的參考圖轉換為符合目標比例的標準 PNG Blob
-    async function getPreparedReferenceBlob(targetWidth, targetHeight) {
-      if (!referenceImageDataUrl) return null;
+      if (count === 0) {
+        refImageCountBadge.classList.add('hidden');
+        refImagePreviewArea.classList.add('hidden');
+        refImageUploadArea.classList.remove('hidden');
+      } else {
+        refImageCountBadge.classList.remove('hidden');
+        refImagePreviewArea.classList.remove('hidden');
+
+        if (count >= MAX_REF_IMAGES) {
+          refImageUploadArea.classList.add('hidden');
+          btnAddMoreRef.classList.add('opacity-40', 'pointer-events-none');
+        } else {
+          refImageUploadArea.classList.remove('hidden');
+          btnAddMoreRef.classList.remove('opacity-40', 'pointer-events-none');
+        }
+      }
+
+      // 產生每張圖片的卡片
+      refImagesList.innerHTML = referenceImages.map((item, idx) => `
+        <div class="flex items-center gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2 shadow-xs group transition-colors hover:border-teal-500/50">
+          <div class="relative flex-shrink-0">
+            <img src="${item.dataUrl}" alt="${item.name}" class="w-11 h-11 rounded-md object-cover border border-slate-200 dark:border-slate-700">
+            <span class="absolute -top-1.5 -left-1.5 bg-teal-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-xs">#${idx + 1}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">【素材 ${idx + 1}】</span>
+              <span class="text-[10px] text-slate-400 font-mono">${item.width}×${item.height}</span>
+            </div>
+            <p class="text-xs font-medium text-slate-700 dark:text-slate-200 truncate mt-0.5" title="${item.name}">${item.name}</p>
+          </div>
+          <button type="button" class="btn-remove-single-ref p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors" data-id="${item.id}" title="移除此素材">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+
+      // 綁定個別刪除按鈕
+      refImagesList.querySelectorAll('.btn-remove-single-ref').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetId = btn.getAttribute('data-id');
+          removeRefImage(targetId);
+        });
+      });
+
+      lucide.createIcons();
+      updateExecuteButtonText();
+    }
+
+    // 移除單張素材
+    function removeRefImage(id) {
+      referenceImages = referenceImages.filter(item => item.id !== id);
+      renderRefImagesList();
+      showStatus('已移除該張參考素材', 'info');
+    }
+
+    // 清空所有素材
+    function clearAllRefImages() {
+      referenceImages = [];
+      refImageInput.value = '';
+      renderRefImagesList();
+      showStatus('已清空所有參考素材，恢復純文字生圖模式', 'info');
+    }
+
+    // 一鍵帶入雙人/多人物素材提示指引
+    function insertDualPrompt() {
+      if (referenceImages.length >= 2) {
+        const dualPromptGuide = `【素材 1】為主要候選人/主角，【素材 2】為站台貴賓/合體人物，請讓兩位人物自然並肩站立、神情自信親切、眼神面向鏡頭互動生動，光影與色調融合一致，呈現團結氣勢。`;
+        if (!inputPrompt.value.includes('【素材 1】')) {
+          inputPrompt.value = (inputPrompt.value ? inputPrompt.value.trim() + '\n\n' : '') + dualPromptGuide;
+        }
+        showStatus('已在 Prompt 中帶入雙人合體角色指引！可依需求修改姓名或動作', 'success');
+      } else if (referenceImages.length === 1) {
+        const singlePromptGuide = `請依據【素材 1】的人物外貌與特徵進行創作，保持面部神韻、髮型與服裝細節一致性。`;
+        inputPrompt.value = (inputPrompt.value ? inputPrompt.value.trim() + '\n\n' : '') + singlePromptGuide;
+        showStatus('已在 Prompt 中帶入單一素材指引！', 'success');
+      } else {
+        showStatus('請先上傳 1～5 張參考素材！', 'info');
+      }
+      inputPrompt.focus();
+    }
+
+    // 更新執行按鈕文字
+    function updateExecuteButtonText() {
+      if (currentMode === 'generate') {
+        if (referenceImages.length > 0) {
+          btnExecuteText.innerText = `✨ 依據 ${referenceImages.length} 張素材生成 (多圖以圖生圖)`;
+        } else {
+          btnExecuteText.innerText = '立即生成圖片 (GPT 2.5)';
+        }
+      } else {
+        btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
+      }
+    }
+
+    // 單張素材轉為符合規格的 PNG Blob (尺寸倍數校準)
+    function getPreparedBlobFromDataUrl(dataUrl) {
       return new Promise((resolve) => {
+        if (!dataUrl) return resolve(null);
         const img = new Image();
         img.onload = () => {
+          const maxDim = 2048;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round(h * (maxDim / w));
+              w = maxDim;
+            } else {
+              w = Math.round(w * (maxDim / h));
+              h = maxDim;
+            }
+          }
+          // 確保尺寸符合 OpenAI 16 倍數原則
+          w = Math.max(64, Math.round(w / 16) * 16);
+          h = Math.max(64, Math.round(h / 16) * 16);
+
           const c = document.createElement('canvas');
-          c.width = targetWidth;
-          c.height = targetHeight;
+          c.width = w;
+          c.height = h;
           const ctx = c.getContext('2d');
-          
-          const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
-          const x = (targetWidth - img.width * scale) / 2;
-          const y = (targetHeight - img.height * scale) / 2;
-          
-          ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+          ctx.drawImage(img, 0, 0, w, h);
           c.toBlob((blob) => resolve(blob), 'image/png');
         };
-        img.src = referenceImageDataUrl;
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+      });
+    }
+
+    // 雙人並排 / 多素材合拼圖 Canvas 生成（在同一張畫布上標記【素材 1】與【素材 2】）
+    function createCompositeReferenceBlob(refList, targetW, targetH) {
+      return new Promise((resolve) => {
+        if (!refList || refList.length === 0) return resolve(null);
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+
+        // 攝影暗房白色/淡灰底色
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, targetW, targetH);
+
+        const count = refList.length;
+        let cols = 1, rows = 1;
+        if (count === 2) {
+          cols = 2; rows = 1; // 兩人並排！
+        } else if (count === 3) {
+          cols = 3; rows = 1;
+        } else if (count === 4) {
+          cols = 2; rows = 2;
+        } else {
+          cols = 3; rows = 2;
+        }
+
+        const cellW = targetW / cols;
+        const cellH = targetH / rows;
+
+        let loadedCount = 0;
+        refList.forEach((item, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          const cellX = col * cellW;
+          const cellY = row * cellH;
+
+          const img = new Image();
+          img.onload = () => {
+            const pad = 12;
+            const maxW = cellW - pad * 2;
+            const maxH = cellH - pad * 2;
+            const scale = Math.min(maxW / img.width, maxH / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = cellX + pad + (maxW - dw) / 2;
+            const dy = cellY + pad + (maxH - dh) / 2;
+
+            ctx.drawImage(img, dx, dy, dw, dh);
+
+            // 繪製【素材 N】清晰標籤
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(cellX + 16, cellY + 16, 95, 26, 6);
+              ctx.fill();
+            } else {
+              ctx.fillRect(cellX + 16, cellY + 16, 95, 26);
+            }
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText(`【素材 ${index + 1}】`, cellX + 24, cellY + 34);
+
+            loadedCount++;
+            if (loadedCount === count) {
+              canvas.toBlob((blob) => resolve(blob), 'image/png');
+            }
+          };
+          img.onerror = () => {
+            loadedCount++;
+            if (loadedCount === count) {
+              canvas.toBlob((blob) => resolve(blob), 'image/png');
+            }
+          };
+          img.src = item.dataUrl;
+        });
       });
     }
 
@@ -1717,18 +1961,17 @@
       if (mode === 'generate') {
         tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
         tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
-        btnExecuteText.innerText = referenceImageDataUrl ? "✨ 依據參考圖生成 (以圖生圖)" : "立即生成圖片 (GPT 2.5)";
         promptLabel.innerHTML = '<i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)';
         inpaintGuideBox.classList.add('hidden');
         setTool('select');
       } else {
         tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
         tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
-        btnExecuteText.innerText = "開始局部修圖 (AI Inpaint)";
         promptLabel.innerHTML = '<i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部修改描述 (請描述塗抹區塊想替換成什麼)';
         inpaintGuideBox.classList.remove('hidden');
         setTool('brush');
       }
+      updateExecuteButtonText();
       lucide.createIcons();
     }
 
@@ -2002,8 +2245,8 @@
       }
 
       if (currentMode === 'generate') {
-        if (referenceImageDataUrl) {
-          // 以圖生圖 (Image-to-Image 帶參考圖片)
+        if (referenceImages.length > 0) {
+          // 以圖生圖 (Image-to-Image 帶 1~5 張參考素材)
           await executeImageToImage(apiKey, prompt);
         } else {
           // 純文字生圖 (Text-to-Image)
@@ -2097,25 +2340,45 @@
       }
     }
 
-    // 13.2 以圖生圖 (Image-to-Image with Reference Image via /v1/images/edits)
+    // 13.2 以圖生圖 (Image-to-Image with 1~5 Reference Images via /v1/images/edits)
     async function executeImageToImage(apiKey, prompt) {
-      setLoading(true, '正在依據參考圖片透過 GPT Image 2.5 以圖生圖中...');
+      if (!referenceImages || referenceImages.length === 0) {
+        showStatus('尚未上傳任何參考素材！', 'error');
+        return;
+      }
+      setLoading(true, `正在依據 ${referenceImages.length} 張素材透過 GPT Image 2.5 以圖生圖中...`);
       try {
         const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-flare';
         const size = getValidOpenAISize(selectResolution.value, model);
         const [targetW, targetH] = size.split('x').map(Number);
+        const sendMode = document.querySelector('input[name="refSendMode"]:checked')?.value || 'multi';
 
-        // 轉換為標準尺寸 PNG Blob
-        const refBlob = await getPreparedReferenceBlob(targetW, targetH);
+        let formData = new FormData();
 
-        const formData = new FormData();
-        formData.append('image', refBlob, 'reference.png');
+        if (sendMode === 'composite' || referenceImages.length === 1) {
+          // 雙人並排合拼圖模式或單圖模式
+          const refBlob = referenceImages.length === 1 
+            ? await getPreparedBlobFromDataUrl(referenceImages[0].dataUrl)
+            : await createCompositeReferenceBlob(referenceImages, targetW, targetH);
+
+          if (!refBlob) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
+          formData.append('image', refBlob, 'reference.png');
+        } else {
+          // 原生多圖傳送模式 (GPT Image 2.5 edits 端點支援多個 image 欄位)
+          for (let i = 0; i < referenceImages.length; i++) {
+            const blob = await getPreparedBlobFromDataUrl(referenceImages[i].dataUrl);
+            if (blob) {
+              formData.append('image', blob, `ref_${i + 1}.png`);
+            }
+          }
+        }
+
         formData.append('prompt', prompt);
         formData.append('model', model);
         formData.append('n', '1');
         formData.append('size', size);
 
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
+        let response = await fetch('https://api.openai.com/v1/images/edits', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`
@@ -2123,7 +2386,31 @@
           body: formData
         });
 
-        const data = await response.json();
+        let data = await response.json();
+
+        // 智慧降級重試：若原生多圖模式被特定閘道或代理解析器拒絕，自動切換為「雙人並排合拼圖」模式重新發送
+        if (!response.ok && sendMode === 'multi' && referenceImages.length > 1) {
+          console.warn('原生多圖請求未通過，自動切換至「雙人並排合拼圖」模式重發...', data.error?.message);
+          showStatus('正在自動以「雙人並排合拼圖」模式重新送出...', 'info');
+
+          const compositeBlob = await createCompositeReferenceBlob(referenceImages, targetW, targetH);
+          const fallbackFormData = new FormData();
+          fallbackFormData.append('image', compositeBlob, 'composite_reference.png');
+          fallbackFormData.append('prompt', prompt);
+          fallbackFormData.append('model', model);
+          fallbackFormData.append('n', '1');
+          fallbackFormData.append('size', size);
+
+          response = await fetch('https://api.openai.com/v1/images/edits', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: fallbackFormData
+          });
+          data = await response.json();
+        }
+
         if (!response.ok) {
           throw new Error(data.error?.message || `以圖生圖失敗，API 代碼: ${response.status}`);
         }
@@ -2139,14 +2426,14 @@
         const permanentDataUrl = await ensureDataUrl(rawUrl);
 
         loadImageToCanvas(permanentDataUrl, targetW, targetH);
-        await saveImageToDB(permanentDataUrl, '[以圖生圖] ' + prompt, model, size);
+        await saveImageToDB(permanentDataUrl, `[多圖以圖生圖 ×${referenceImages.length}] ` + prompt, model, size);
         refreshGalleryFromDB();
 
         if (chkAutoDownload.checked) {
           triggerAutoDownload(permanentDataUrl, prompt);
         }
 
-        showStatus('✨ 以圖生圖成功！已依據參考圖片與 Prompt 融合生成新圖', 'success');
+        showStatus(`✨ 多圖以圖生圖成功！已融合 ${referenceImages.length} 張素材進行創作`, 'success');
       } catch (err) {
         console.error('以圖生圖失敗:', err);
         showStatus(`❌ 以圖生圖失敗：${err.message}`, 'error');
@@ -2320,11 +2607,7 @@
       if (isLoading) {
         btnExecuteText.innerText = message || '處理中...';
       } else {
-        if (currentMode === 'generate') {
-          btnExecuteText.innerText = referenceImageDataUrl ? '✨ 依據參考圖生成 (以圖生圖)' : '立即生成圖片 (GPT 2.5)';
-        } else {
-          btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
-        }
+        updateExecuteButtonText();
       }
     }
 
