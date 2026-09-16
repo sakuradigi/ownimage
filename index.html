@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPT Image 2.5 梗圖與圖像創作工作台</title>
+  <title>GPT Image 2.5 視覺創作與圖像修復工作台</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,10 +11,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Google Fonts: 繁體中文與經典梗圖字型 -->
+  <!-- Google Fonts: 繁體中文與經典強烈字型 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Impact&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Impact&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -22,15 +22,17 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Noto Sans TC"', 'sans-serif'],
-            meme: ['Impact', '"Noto Sans TC"', 'sans-serif']
+            sans: ['"Noto Sans TC"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            impact: ['Impact', '"Noto Sans TC"', 'sans-serif']
           },
           colors: {
             brand: {
               50: '#f0fdf4',
+              100: '#dcfce7',
               500: '#22c55e',
               600: '#16a34a',
               700: '#15803d',
+              800: '#166534',
               900: '#14532d',
             }
           }
@@ -40,94 +42,116 @@
   </script>
 
   <style>
-    /* 畫布容器與棋盤背景（用於透明背景預覽） */
+    /* 畫布棋盤透明背景（支援淺色與深色） */
     .canvas-checkerboard {
-      background-color: #1e293b;
+      background-color: #f1f5f9;
       background-image: 
-        linear-gradient(45deg, #0f172a 25%, transparent 25%), 
-        linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #0f172a 75%), 
-        linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+        linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+        linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
       background-size: 20px 20px;
       background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
     }
+    .dark .canvas-checkerboard {
+      background-color: #0f172a;
+      background-image: 
+        linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+    }
+
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #475569;
+      background: #94a3b8;
       border-radius: 9999px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #475569;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
       background: transparent;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
 
   <!-- ================= 頂部導航列 ================= -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 py-3">
+  <header class="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-40 px-4 py-3 shadow-sm transition-colors">
     <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      
+      <!-- 標題與圖標 -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i data-lucide="sparkles" class="w-6 h-6 text-white"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 flex-shrink-0">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
         </div>
         <div>
-          <h1 class="font-black text-lg sm:text-xl tracking-wide bg-gradient-to-r from-emerald-400 via-teal-200 to-white bg-clip-text text-transparent">
-            GPT Image 2.5 梗圖創作工作台
+          <h1 class="font-black text-lg sm:text-xl tracking-wide bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white bg-clip-text text-transparent">
+            GPT Image 2.5 視覺創作與圖像修復工作台
           </h1>
-          <p class="text-xs text-slate-400 hidden sm:block">
-            支援 OpenAI Sunburst / Flare 模型 ‧ 局部遮罩修圖 ‧ 經典梗圖排版
+          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 局部遮罩重繪 ‧ 創意圖卡排版
           </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
+      <!-- 右側按鈕組：淺深色切換、API Key、說明 -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- 淺色/深色模式切換鈕 -->
+        <button id="btnThemeToggle" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all shadow-sm" title="切換淺色/深色模式">
+          <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
+
         <!-- API Key 設定按鈕 -->
-        <button id="btnOpenKeyModal" class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-500 bg-slate-800 text-sm font-medium transition-all group">
-          <i data-lucide="key" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+        <button id="btnOpenKeyModal" class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 transition-all group shadow-sm">
+          <i data-lucide="key" class="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform"></i>
           <span id="keyStatusLabel">設定 API Key</span>
         </button>
 
-        <!-- GitHub / 說明按鈕 -->
-        <button id="btnHelp" class="p-2 rounded-lg border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors" title="使用說明">
-          <i data-lucide="help-circle" class="w-5 h-5"></i>
+        <!-- 說明按鈕 -->
+        <button id="btnHelp" class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm" title="功能導覽">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
         </button>
       </div>
+
     </div>
   </header>
 
   <!-- ================= 主要工作區 ================= -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
     
-    <!-- 左側面板：生圖 / 修圖 控制台 (4 欄) -->
+    <!-- 左側控制面板 (4 欄) -->
     <section class="lg:col-span-4 flex flex-col gap-4">
       
       <!-- 模式切換分頁 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 flex gap-1 shadow-sm">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 flex gap-1 shadow-sm transition-colors">
         <button id="tabGenerate" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md">
           <i data-lucide="wand-2" class="w-4 h-4"></i> 全新生圖
         </button>
-        <button id="tabEdit" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60">
+        <button id="tabEdit" class="flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60">
           <i data-lucide="brush" class="w-4 h-4"></i> 局部遮罩修圖
         </button>
       </div>
 
       <!-- 控制項主卡片 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4 flex-1">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm dark:shadow-xl flex flex-col gap-4 flex-1 transition-colors">
         
         <!-- 模型選擇 -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-400"></i> AI 模型
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-500"></i> AI 模型
             </label>
-            <span id="modelBadge" class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono">旗艦修圖</span>
+            <span id="modelBadge" class="text-[10px] bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">極速生圖</span>
           </div>
-          <select id="selectModel" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="gpt-image-2.5-sunburst" selected>gpt-image-2.5-sunburst (高畫質/精準修圖)</option>
-            <option value="gpt-image-2.5-flare">gpt-image-2.5-flare (速度提升 50%)</option>
+          <select id="selectModel" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
+            <option value="gpt-image-2.5-flare" selected>gpt-image-2.5-flare (推薦：速度提升 50%)</option>
+            <option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst (旗艦：高精細/精準修圖)</option>
             <option value="dall-e-3">dall-e-3 (相容備用)</option>
           </select>
         </div>
@@ -135,37 +159,37 @@
         <!-- 參數設定：尺寸、比例、品質、背景 -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1.5">圖片尺寸 / 比例</label>
-            <select id="selectResolution" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
-              <option value="1024x1024" selected>1:1 正方形 (1024x1024)</option>
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">圖片尺寸 / 比例</label>
+            <select id="selectResolution" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="864x1536" selected>9:16 直式 (864x1536) 早安/文宣</option>
+              <option value="1024x1024">1:1 正方形 (1024x1024)</option>
               <option value="1536x864">16:9 橫圖 (1536x864)</option>
-              <option value="864x1536">9:16 直式 (864x1536)</option>
               <option value="1024x768">4:3 標準 (1024x768)</option>
               <option value="1792x1024">超寬文宣 (1792x1024)</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1.5">畫質 Quality</label>
-            <select id="selectQuality" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
-              <option value="auto" selected>Auto 自動</option>
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">畫質 Quality</label>
+            <select id="selectQuality" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="auto">Auto 自動</option>
+              <option value="medium" selected>Medium 一般 (快速推薦)</option>
               <option value="high">High 高品質</option>
-              <option value="medium">Medium 一般</option>
-              <option value="low">Low 快速</option>
+              <option value="low">Low 快速草稿</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1.5">背景模式 (GPT 2.5)</label>
-            <select id="selectBackground" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">背景模式 (GPT 2.5)</label>
+            <select id="selectBackground" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
               <option value="opaque" selected>不透明 Opaque</option>
               <option value="transparent">透明背景 Transparent</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs font-semibold text-slate-300 block mb-1.5">輸出格式</label>
-            <select id="selectFormat" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">輸出格式</label>
+            <select id="selectFormat" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
               <option value="png" selected>PNG (推薦)</option>
               <option value="webp">WebP (輕量)</option>
               <option value="jpeg">JPEG</option>
@@ -176,177 +200,218 @@
         <!-- 提示詞 Prompt 輸入 -->
         <div class="flex flex-col flex-1">
           <div class="flex items-center justify-between mb-1.5">
-            <label id="promptLabel" class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-400"></i> 生圖提示詞 (Prompt)
+            <label id="promptLabel" class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)
             </label>
-            <button id="btnClearPrompt" class="text-xs text-slate-400 hover:text-rose-400 transition-colors">清空</button>
+            <button id="btnClearPrompt" class="text-xs text-slate-400 hover:text-rose-500 transition-colors">清空</button>
           </div>
 
-          <textarea id="inputPrompt" rows="5" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors custom-scrollbar resize-none" placeholder="描述您想生成的政治梗圖或角色場景...（例如：在立法院喝珍珠奶茶的幽默卡通政治人物，諷刺漫畫風格，細節豐富）"></textarea>
+          <textarea id="inputPrompt" rows="5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors custom-scrollbar resize-none" placeholder="描述您想生成的圖卡、早安圖或主體場景...（例如：早安圖，質感、綠意、舒適、溫馨晨光，細膩光影）"></textarea>
 
           <!-- 快速風格標籤 -->
           <div class="mt-2 flex flex-wrap gap-1.5">
-            <span class="text-[11px] text-slate-400 self-center mr-1">快捷風格:</span>
-            <button class="style-tag px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-md text-slate-300" data-tag="諷刺政治漫畫風格，誇張表情與大頭身比例">諷刺漫畫</button>
-            <button class="style-tag px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-md text-slate-300" data-tag="電視新聞直播畫面構圖，帶有突發新聞紅色標題欄風格">新聞快報</button>
-            <button class="style-tag px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-md text-slate-300" data-tag="極簡扁平普普藝術向量風，高飽和度色彩對比">普普藝術</button>
-            <button class="style-tag px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-md text-slate-300" data-tag="寫實新聞現場攝影視角，廣角鏡頭，自然紀實光影">寫實攝影</button>
-            <button class="style-tag px-2 py-1 bg-slate-800 hover:bg-slate-700 text-xs rounded-md text-slate-300" data-tag="無文字純背景，主體置中，透明背景，乾淨去背">去背主體</button>
+            <span class="text-[11px] text-slate-400 self-center mr-1">快捷靈感:</span>
+            <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="早安圖質感生活風格，溫馨晨光照射翠綠植栽，自然柔和色調">早安綠意</button>
+            <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="高質感官方施政報告宣傳圖卡，簡約大器構圖，現代美學">文宣圖卡</button>
+            <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="新聞快報鏡頭視角，帶有突發即時報導現場感">新聞現場</button>
+            <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="藝術幽默插畫風格，筆觸豐富，生動表情與細節">藝術插畫</button>
+            <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="無文字純背景，主體居中，乾淨透明背景去背">透明去背</button>
           </div>
         </div>
 
-        <!-- 局部修圖專用提示引導（在修圖分頁顯示） -->
-        <div id="inpaintGuideBox" class="hidden bg-emerald-950/40 border border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-200">
+        <!-- 局部修圖提示引導 -->
+        <div id="inpaintGuideBox" class="hidden bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-200">
           <p class="font-bold flex items-center gap-1.5 mb-1">
-            <i data-lucide="info" class="w-3.5 h-3.5"></i> 局部修改小技巧：
+            <i data-lucide="info" class="w-3.5 h-3.5"></i> 局部修改操作指引：
           </p>
-          <p class="text-slate-300">
-            請在右側畫布上使用「紅色筆刷」塗抹要修改的區域（如換帽子、換手勢、改臉部），Prompt 請輸入「希望被塗抹區塊變成什麼」。
+          <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+            請在右側畫布使用「紅色塗抹筆刷」框選要修改的區域（畫錯可按工具列的「上一步」撤銷），在下方 Prompt 輸入希望塗抹區域替換成什麼內容，然後點擊執行！
           </p>
         </div>
 
         <!-- 執行按鈕 -->
-        <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none">
+        <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
           <span id="btnExecuteText">立即生成圖片 (GPT 2.5)</span>
         </button>
 
-        <!-- 狀態提示 -->
+        <!-- 狀態提示框 -->
         <div id="statusAlert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2"></div>
       </div>
     </section>
 
-    <!-- 右側面板：創作畫布與梗圖排版工具 (8 欄) -->
+    <!-- 右側面板：畫布與圖卡排版工具 (8 欄) -->
     <section class="lg:col-span-8 flex flex-col gap-4">
       
-      <!-- 畫布上方快捷工具列 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+      <!-- 畫布工具列 -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm transition-colors">
         
-        <!-- 左側工具組：選擇、塗抹筆刷、橡皮擦、加文字 -->
+        <!-- 左側工具組：選擇、筆刷、上一步、下一步、文字 -->
         <div class="flex items-center flex-wrap gap-1.5">
-          <button id="toolSelect" class="p-2 rounded-lg bg-slate-800 text-emerald-400 hover:bg-slate-700 transition-colors" title="選取/移動/縮放 (V)">
+          
+          <!-- 選取工具 -->
+          <button id="toolSelect" class="p-2 rounded-xl bg-emerald-50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-slate-700 transition-colors" title="選取/移動/縮放物件 (V)">
             <i data-lucide="mouse-pointer" class="w-4 h-4"></i>
           </button>
           
-          <button id="toolBrush" class="p-2 rounded-lg hover:bg-slate-800 text-slate-300 transition-colors relative" title="塗抹遮罩筆刷 (用於局部修圖)">
+          <!-- 塗抹筆刷 -->
+          <button id="toolBrush" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors relative" title="遮罩塗抹筆刷 (用於局部修圖)">
             <i data-lucide="brush" class="w-4 h-4"></i>
-            <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500"></span>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
           </button>
 
-          <!-- 筆刷粗細調節 (塗抹模式時顯示) -->
-          <div id="brushSizeControl" class="hidden items-center gap-2 px-2 py-1 bg-slate-950 rounded-lg border border-slate-800">
-            <span class="text-xs text-slate-400">筆刷:</span>
-            <input type="range" id="brushSize" min="5" max="80" value="25" class="w-20 accent-rose-500 cursor-pointer">
-            <span id="brushSizeVal" class="text-xs text-slate-300 font-mono">25</span>
+          <!-- 筆刷粗細調節 -->
+          <div id="brushSizeControl" class="hidden items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+            <span class="text-xs text-slate-500 dark:text-slate-400">筆刷:</span>
+            <input type="range" id="brushSize" min="5" max="90" value="30" class="w-16 sm:w-20 accent-rose-500 cursor-pointer">
+            <span id="brushSizeVal" class="text-xs text-slate-700 dark:text-slate-300 font-mono">30</span>
           </div>
 
-          <button id="toolClearMask" class="hidden p-2 rounded-lg hover:bg-slate-800 text-rose-400 transition-colors" title="清除所有塗抹遮罩">
+          <!-- 關鍵功能：上一步 (Undo) -->
+          <button id="btnUndoMask" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:pointer-events-none transition-colors" title="上一步 / 撤銷最後一筆塗抹 (Cmd+Z / Ctrl+Z)" disabled>
+            <i data-lucide="undo-2" class="w-4 h-4"></i>
+          </button>
+
+          <!-- 關鍵功能：下一步 (Redo) -->
+          <button id="btnRedoMask" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-40 disabled:pointer-events-none transition-colors" title="下一步 / 重做塗抹 (Cmd+Shift+Z)" disabled>
+            <i data-lucide="redo-2" class="w-4 h-4"></i>
+          </button>
+
+          <!-- 清除所有遮罩 -->
+          <button id="toolClearMask" class="hidden p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-500 transition-colors" title="清除所有塗抹遮罩">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
 
-          <div class="h-5 w-px bg-slate-800 mx-1"></div>
+          <div class="h-5 w-px bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
-          <!-- 梗圖文字工具 -->
-          <button id="btnAddTopText" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors" title="加入頂部梗圖文字">
-            <i data-lucide="type" class="w-3.5 h-3.5 text-amber-400"></i> +頂部文字
+          <!-- 文字工具 -->
+          <button id="btnAddTopText" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors" title="加入頂部標題文字">
+            <i data-lucide="type" class="w-3.5 h-3.5 text-amber-500"></i> +頂部文字
           </button>
-          <button id="btnAddBottomText" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors" title="加入底部梗圖文字">
-            <i data-lucide="type" class="w-3.5 h-3.5 text-amber-400"></i> +底部文字
+          <button id="btnAddBottomText" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors" title="加入底部說明文字">
+            <i data-lucide="type" class="w-3.5 h-3.5 text-amber-500"></i> +底部文字
           </button>
-          <button id="btnAddCustomText" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition-colors">
+          <button id="btnAddCustomText" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 transition-colors">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i> 自訂文字
           </button>
 
-          <div class="h-5 w-px bg-slate-800 mx-1"></div>
-
           <!-- 刪除選取物件 -->
-          <button id="btnDeleteSelected" class="p-2 rounded-lg hover:bg-rose-950/50 text-slate-400 hover:text-rose-400 transition-colors" title="刪除選取圖層/文字 (Delete)">
+          <button id="btnDeleteSelected" class="p-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950/50 text-slate-400 hover:text-rose-500 transition-colors" title="刪除選取圖層/文字 (Delete)">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
 
-        <!-- 右側操作組：本機上傳、下載、複製 -->
+        <!-- 右側操作組：本機上傳、複製、下載 -->
         <div class="flex items-center gap-2">
           <!-- 上傳本機圖片按鈕 -->
-          <label class="cursor-pointer px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition-colors">
+          <label class="cursor-pointer px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 transition-colors">
             <i data-lucide="upload" class="w-3.5 h-3.5"></i> 開啟本機圖片
             <input type="file" id="fileUpload" accept="image/*" class="hidden">
           </label>
 
           <!-- 複製圖片 -->
-          <button id="btnCopyImage" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="複製圖片到剪貼簿">
+          <button id="btnCopyImage" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="複製圖片到剪貼簿">
             <i data-lucide="copy" class="w-4 h-4"></i>
           </button>
 
           <!-- 一鍵下載 -->
-          <button id="btnDownload" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all">
+          <button id="btnDownload" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all">
             <i data-lucide="download" class="w-3.5 h-3.5"></i> 下載完成圖
           </button>
         </div>
       </div>
 
-      <!-- 選中文字物件時的屬性調整列 (動態顯示) -->
-      <div id="textControlsBar" class="hidden bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 flex flex-wrap items-center gap-3 text-xs">
-        <span class="font-bold text-amber-400 flex items-center gap-1">
+      <!-- 選中文字物件時的屬性調整列 -->
+      <div id="textControlsBar" class="hidden bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 flex flex-wrap items-center gap-3 text-xs shadow-sm">
+        <span class="font-bold text-amber-500 flex items-center gap-1">
           <i data-lucide="sliders" class="w-3.5 h-3.5"></i> 文字屬性:
         </span>
         <div class="flex items-center gap-1.5">
-          <label class="text-slate-400">字號:</label>
-          <input type="number" id="txtFontSize" min="12" max="200" value="48" class="w-16 bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-200">
+          <label class="text-slate-500 dark:text-slate-400">字號:</label>
+          <input type="number" id="txtFontSize" min="12" max="250" value="48" class="w-16 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-center text-slate-800 dark:text-slate-200">
         </div>
         <div class="flex items-center gap-1.5">
-          <label class="text-slate-400">字色:</label>
-          <input type="color" id="txtFillColor" value="#FFFFFF" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+          <label class="text-slate-500 dark:text-slate-400">字色:</label>
+          <input type="color" id="txtFillColor" value="#FFFFFF" class="w-6 h-6 rounded border border-slate-300 dark:border-slate-700 bg-transparent cursor-pointer">
         </div>
         <div class="flex items-center gap-1.5">
-          <label class="text-slate-400">描邊色:</label>
-          <input type="color" id="txtStrokeColor" value="#000000" class="w-6 h-6 rounded border border-slate-700 bg-transparent cursor-pointer">
+          <label class="text-slate-500 dark:text-slate-400">外框描邊:</label>
+          <input type="color" id="txtStrokeColor" value="#000000" class="w-6 h-6 rounded border border-slate-300 dark:border-slate-700 bg-transparent cursor-pointer">
         </div>
         <div class="flex items-center gap-1.5">
-          <label class="text-slate-400">描邊粗細:</label>
+          <label class="text-slate-500 dark:text-slate-400">描邊粗細:</label>
           <input type="range" id="txtStrokeWidth" min="0" max="15" value="4" class="w-16 accent-amber-500">
         </div>
-        <button id="btnToggleMemeStyle" class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded hover:bg-amber-500/30">
-          經典黑白描邊
+        <button id="btnToggleMemeStyle" class="px-2 py-0.5 bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 rounded hover:bg-amber-100 dark:hover:bg-amber-500/30">
+          強烈黑白描邊
         </button>
       </div>
 
-      <!-- 畫布展示主區域 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col items-center justify-center min-h-[460px] overflow-hidden relative">
+      <!-- 畫布展示主區域 (支援縮放、最適全圖預覽與滾動) -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm dark:shadow-xl flex-1 flex flex-col items-center justify-center min-h-[500px] relative transition-colors">
         
+        <!-- 畫布浮動縮放控制列 (關鍵新功能：放大、縮小、100%、最適全圖) -->
+        <div class="absolute top-4 right-4 z-20 flex items-center gap-1 bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-xl p-1 shadow-md text-xs">
+          <!-- 縮小 -->
+          <button id="btnZoomOut" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" title="縮小 (Ctrl + 滾輪向下)">
+            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+          </button>
+          
+          <!-- 當前縮放百分比 (點擊重設 100%) -->
+          <button id="btnZoomReset" class="px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-200 transition-colors" title="點擊重設 100% 原寸">
+            <span id="zoomPercentLabel">100%</span>
+          </button>
+
+          <!-- 放大 -->
+          <button id="btnZoomIn" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" title="放大 (Ctrl + 滾輪向上)">
+            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+          </button>
+
+          <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
+
+          <!-- 適應螢幕全圖 (Fit to View) -->
+          <button id="btnFitScreen" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors shadow-sm" title="完整呈現全圖 (不裁切任何角落)">
+            <i data-lucide="maximize-2" class="w-3 h-3"></i>
+            <span>最適全圖</span>
+          </button>
+        </div>
+
         <!-- 空狀態引導 -->
         <div id="canvasEmptyState" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none z-10">
-          <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center mb-3 text-slate-400 shadow-inner">
-            <i data-lucide="image" class="w-8 h-8 text-slate-500"></i>
+          <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-3 text-slate-400 shadow-inner">
+            <i data-lucide="image" class="w-8 h-8 text-slate-400 dark:text-slate-500"></i>
           </div>
-          <p class="text-slate-300 font-bold text-base mb-1">畫布目前為空</p>
-          <p class="text-slate-500 text-xs max-w-sm">
-            請在左側輸入 Prompt 點擊「立即生成圖片」，或點擊上方「開啟本機圖片」載入您想修改的圖卡！
+          <p class="text-slate-700 dark:text-slate-200 font-bold text-base mb-1">畫布目前為空</p>
+          <p class="text-slate-500 dark:text-slate-400 text-xs max-w-sm">
+            請在左側輸入提示詞點擊「立即生成圖片」，或點擊上方「開啟本機圖片」載入您想修改的圖卡！
           </p>
         </div>
 
-        <!-- 畫布滾動/縮放容器 -->
-        <div class="canvas-checkerboard rounded-xl border border-slate-800 shadow-2xl overflow-hidden max-w-full max-h-[600px]">
-          <canvas id="mainCanvas" width="800" height="800"></canvas>
+        <!-- 畫布滾動檢視視窗 (Viewport) -->
+        <div id="canvasViewport" class="w-full flex items-center justify-center overflow-auto max-h-[68vh] p-2 custom-scrollbar">
+          <div id="canvasWrapper" class="canvas-checkerboard rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-150">
+            <canvas id="mainCanvas" width="864" height="1536"></canvas>
+          </div>
         </div>
 
-        <!-- 畫布右下角尺寸資訊標籤 -->
-        <div class="absolute bottom-3 right-4 bg-slate-950/80 border border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-400">
-          畫布尺寸: <span id="canvasSizeLabel">800 x 800</span> px
+        <!-- 畫布左下角原生尺寸資訊標籤 -->
+        <div class="absolute bottom-3 left-4 bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-500 dark:text-slate-400 shadow-sm">
+          原生解析度: <span id="canvasSizeLabel">864 x 1536</span> px
         </div>
+
       </div>
 
       <!-- 底部歷史縮圖庫 (Session Gallery) -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors">
         <div class="flex items-center justify-between mb-2.5">
           <div class="flex items-center gap-2">
-            <i data-lucide="history" class="w-4 h-4 text-emerald-400"></i>
-            <h3 class="text-xs font-bold text-slate-300 tracking-wider uppercase">本次歷史生成紀錄 (點擊載入二次創作)</h3>
+            <i data-lucide="history" class="w-4 h-4 text-emerald-500"></i>
+            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">本次歷史創作紀錄 (點擊可重新載入加工)</h3>
           </div>
-          <button id="btnClearHistory" class="text-xs text-slate-500 hover:text-rose-400 transition-colors">清除歷史</button>
+          <button id="btnClearHistory" class="text-xs text-slate-400 hover:text-rose-500 transition-colors">清除歷史</button>
         </div>
         <div id="historyStrip" class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[90px] items-center">
-          <p id="historyEmptyMsg" class="text-xs text-slate-600 italic">尚無生成紀錄，生成後的圖片會在此累積...</p>
+          <p id="historyEmptyMsg" class="text-xs text-slate-400 dark:text-slate-600 italic">尚無生成紀錄，生成後的圖片會在此累積...</p>
         </div>
       </div>
 
@@ -355,26 +420,26 @@
   </main>
 
   <!-- ================= API Key 設定彈窗 (Modal) ================= -->
-  <div id="keyModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-150">
-      <button id="btnCloseKeyModal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+  <div id="keyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative animate-in fade-in zoom-in duration-150 text-slate-800 dark:text-slate-100">
+      <button id="btnCloseKeyModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <div class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-800 flex items-center justify-center mb-4 text-emerald-400">
+      <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
         <i data-lucide="shield-check" class="w-6 h-6"></i>
       </div>
 
-      <h3 class="text-lg font-black text-slate-100 mb-1">OpenAI API Key 設定</h3>
-      <p class="text-xs text-slate-400 mb-4 leading-relaxed">
-        您的 API Key 只會保存在您這台電腦的瀏覽器 (<code class="bg-slate-800 px-1 py-0.5 rounded text-emerald-400">localStorage</code>)，<strong class="text-slate-200">絕對不會上傳到任何伺服器或 Git</strong>。
+      <h3 class="text-lg font-black text-slate-900 dark:text-slate-100 mb-1">OpenAI API Key 設定</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+        您的 API Key 只會保存在您本機電腦的瀏覽器 (<code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-emerald-600 dark:text-emerald-400">localStorage</code>)，<strong class="text-slate-700 dark:text-slate-200">絕對不會上傳到任何伺服器或 Git</strong>。
       </p>
 
       <div class="mb-4">
-        <label class="text-xs font-semibold text-slate-300 block mb-1">請輸入您的 OpenAI API Key:</label>
+        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">請輸入您的 OpenAI API Key:</label>
         <div class="relative">
-          <input type="password" id="inputApiKey" placeholder="sk-proj-..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:border-emerald-500">
-          <button id="btnToggleKeyVisibility" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200">
+          <input type="password" id="inputApiKey" placeholder="sk-proj-..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:border-emerald-500">
+          <button id="btnToggleKeyVisibility" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <i data-lucide="eye" class="w-4 h-4"></i>
           </button>
         </div>
@@ -384,7 +449,7 @@
         <button id="btnSaveKey" class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-sm text-white transition-all shadow-md shadow-emerald-600/20">
           儲存並開始使用
         </button>
-        <button id="btnClearSavedKey" class="px-4 py-2.5 rounded-xl border border-slate-700 hover:border-rose-600 text-slate-400 hover:text-rose-400 text-sm font-medium transition-all">
+        <button id="btnClearSavedKey" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:border-rose-500 text-slate-500 hover:text-rose-500 text-sm font-medium transition-all">
           清除
         </button>
       </div>
@@ -392,37 +457,36 @@
   </div>
 
   <!-- ================= 使用說明彈窗 (Help Modal) ================= -->
-  <div id="helpModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-      <button id="btnCloseHelpModal" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+  <div id="helpModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-slate-800 dark:text-slate-100">
+      <button id="btnCloseHelpModal" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white">
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
-      <h3 class="text-lg font-black text-slate-100 mb-3 flex items-center gap-2">
-        <i data-lucide="help-circle" class="w-5 h-5 text-emerald-400"></i> 功能導覽與快捷操作
+      <h3 class="text-lg font-black text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
+        <i data-lucide="help-circle" class="w-5 h-5 text-emerald-500"></i> 功能導覽與快捷操作
       </h3>
       
-      <div class="text-xs text-slate-300 space-y-3 leading-relaxed">
-        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <p class="font-bold text-emerald-400 mb-1">1. GPT Image 2.5 雙模型特色：</p>
-          <ul class="list-disc list-inside space-y-1 text-slate-400">
-            <li><strong class="text-slate-200">gpt-image-2.5-sunburst</strong>：旗艦模型，專門針對高畫質、微調細節與精準修圖設計，局部修改時能極佳維持人物外觀一致性。</li>
-            <li><strong class="text-slate-200">gpt-image-2.5-flare</strong>：速度極快（省時 50%），日常構想梗圖的最佳利器。</li>
-            <li>支援透明背景（Transparent PNG/WebP），去背好物！</li>
+      <div class="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
+        <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+          <p class="font-bold text-emerald-600 dark:text-emerald-400 mb-1">1. 完整預覽與自由縮放：</p>
+          <ul class="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
+            <li>無論是 9:16 直式早安圖或 16:9 寬螢幕圖，點擊右上角「<strong>最適全圖</strong>」即可一覽無遺，絕不裁切任何角落！</li>
+            <li>可隨時使用 <strong>[+]</strong>、<strong>[-]</strong> 或按住 <strong>Ctrl/Command + 滑鼠滾輪</strong> 放大檢視細節。</li>
           </ul>
         </div>
 
-        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <p class="font-bold text-amber-400 mb-1">2. 局部遮罩修圖 (Inpainting)：</p>
-          <p class="text-slate-400">
-            切換至「局部遮罩修圖」分頁，使用紅色筆刷在畫布上塗抹想要修改的局部（如：換帽子、改表情）。在提示詞框輸入修改意圖後點擊執行，AI 便會自動送至 OpenAI `/v1/images/edits` 端點精準重繪！
+        <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+          <p class="font-bold text-amber-600 dark:text-amber-400 mb-1">2. 局部修圖支援「上一步 (Undo)」：</p>
+          <p class="text-slate-600 dark:text-slate-400">
+            切換至「局部遮罩修圖」，使用紅色筆刷塗抹想要修改的局部。若畫錯不必重來，直接點擊「<strong>上一步</strong>」（或按鍵盤 <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Cmd+Z</code> / <code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">Ctrl+Z</code>）即可輕鬆撤銷！
           </p>
         </div>
 
-        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
-          <p class="font-bold text-teal-400 mb-1">3. 經典梗圖排版 (Meme Typography)：</p>
-          <p class="text-slate-400">
-            點擊「+頂部文字」或「+底部文字」，自動套用白字黑粗邊經典梗圖字效。點擊文字物件可自由拖曳、放大縮小或旋轉，雙擊文字可編輯內容。
+        <div class="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+          <p class="font-bold text-teal-600 dark:text-teal-400 mb-1">3. 風格字效與快速出圖：</p>
+          <p class="text-slate-600 dark:text-slate-400">
+            點擊「+頂部文字」或「+底部文字」自由排版，支援字體外框描邊效果，完成後一鍵下載或複製到剪貼簿。
           </p>
         </div>
       </div>
@@ -439,6 +503,13 @@
     let activeTool = 'select';    // 'select' | 'brush'
     let currentImageObj = null;   // 當前載入的 Fabric.Image
     let historyList = [];         // 歷史紀錄陣列
+    let currentZoom = 1.0;        // 當前視窗縮放比例
+    let originalNativeW = 864;    // 原生畫布寬度 (用於維持匯出與 API 高解析度)
+    let originalNativeH = 1536;   // 原生畫布高度
+
+    // 遮罩歷史堆疊（實作 Undo / Redo）
+    let maskUndoStack = [];
+    let maskRedoStack = [];
 
     // 初始化 Lucide 圖標
     lucide.createIcons();
@@ -458,6 +529,15 @@
     const canvasSizeLabel = document.getElementById('canvasSizeLabel');
     const historyStrip = document.getElementById('historyStrip');
     const historyEmptyMsg = document.getElementById('historyEmptyMsg');
+    const canvasViewport = document.getElementById('canvasViewport');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+
+    // 縮放控制項
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
+    const btnFitScreen = document.getElementById('btnFitScreen');
+    const zoomPercentLabel = document.getElementById('zoomPercentLabel');
 
     // 模式切換鈕
     const tabGenerate = document.getElementById('tabGenerate');
@@ -471,6 +551,9 @@
     const brushSize = document.getElementById('brushSize');
     const brushSizeVal = document.getElementById('brushSizeVal');
     const toolClearMask = document.getElementById('toolClearMask');
+    const btnUndoMask = document.getElementById('btnUndoMask');
+    const btnRedoMask = document.getElementById('btnRedoMask');
+
     const btnAddTopText = document.getElementById('btnAddTopText');
     const btnAddBottomText = document.getElementById('btnAddBottomText');
     const btnAddCustomText = document.getElementById('btnAddCustomText');
@@ -487,7 +570,9 @@
     const txtStrokeWidth = document.getElementById('txtStrokeWidth');
     const btnToggleMemeStyle = document.getElementById('btnToggleMemeStyle');
 
-    // API Key 相關
+    // 主題與 Modal
+    const btnThemeToggle = document.getElementById('btnThemeToggle');
+    const themeIcon = document.getElementById('themeIcon');
     const keyModal = document.getElementById('keyModal');
     const btnOpenKeyModal = document.getElementById('btnOpenKeyModal');
     const btnCloseKeyModal = document.getElementById('btnCloseKeyModal');
@@ -497,21 +582,51 @@
     const btnToggleKeyVisibility = document.getElementById('btnToggleKeyVisibility');
     const keyStatusLabel = document.getElementById('keyStatusLabel');
 
-    // Help Modal
     const helpModal = document.getElementById('helpModal');
     const btnHelp = document.getElementById('btnHelp');
     const btnCloseHelpModal = document.getElementById('btnCloseHelpModal');
 
     // -------------------------------------------------------------
-    // 2. 初始化 Fabric.js 畫布
+    // 2. 主題切換 (Light / Dark Mode)
     // -------------------------------------------------------------
-    function initCanvas(width = 800, height = 800) {
+    function initTheme() {
+      const savedTheme = localStorage.getItem('app_theme') || 'dark';
+      setTheme(savedTheme);
+    }
+
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        themeIcon.setAttribute('data-lucide', 'sun');
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeIcon.setAttribute('data-lucide', 'moon');
+      }
+      localStorage.setItem('app_theme', theme);
+      lucide.createIcons();
+    }
+
+    btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
+    });
+
+    initTheme();
+
+    // -------------------------------------------------------------
+    // 3. 初始化 Fabric.js 畫布與縮放架構
+    // -------------------------------------------------------------
+    function initCanvas(nativeWidth = 864, nativeHeight = 1536) {
       if (canvas) {
         canvas.dispose();
       }
+
+      originalNativeW = nativeWidth;
+      originalNativeH = nativeHeight;
+
       canvas = new fabric.Canvas('mainCanvas', {
-        width: width,
-        height: height,
+        width: nativeWidth,
+        height: nativeHeight,
         backgroundColor: null,
         preserveObjectStacking: true,
         selection: true
@@ -519,30 +634,140 @@
 
       // 設定自由繪圖筆刷（用於遮罩塗抹）
       canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-      canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.65)'; // 半透明艷紅色
+      canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.7)'; // 半透明亮紅
       canvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
 
-      // 監聽路徑繪製事件，將遮罩筆刷打上標記
+      // 監聽筆刷路徑生成，支援 Undo/Redo
       canvas.on('path:created', function(opt) {
         opt.path.set({
           isMaskPath: true,
           selectable: false,
           evented: false
         });
+        maskUndoStack.push(opt.path);
+        maskRedoStack = []; // 清空重做堆疊
+        updateUndoRedoUI();
       });
 
-      // 監聽物件選取事件，連動文字屬性列
+      // 物件選取監聽
       canvas.on('selection:created', onObjectSelected);
       canvas.on('selection:updated', onObjectSelected);
       canvas.on('selection:cleared', onObjectDeselected);
 
-      canvasSizeLabel.innerText = `${width} x ${height}`;
+      canvasSizeLabel.innerText = `${nativeWidth} x ${nativeHeight}`;
+
+      // 重置遮罩堆疊
+      maskUndoStack = [];
+      maskRedoStack = [];
+      updateUndoRedoUI();
+
+      // 自動執行最適全圖縮放
+      fitToScreen();
     }
 
-    initCanvas(800, 800);
+    // -------------------------------------------------------------
+    // 4. 縮放 (Zoom & Fit) 核心功能
+    // -------------------------------------------------------------
+    function applyZoom(zoom) {
+      // 縮放限制在 15% 到 300% 之間
+      zoom = Math.max(0.15, Math.min(zoom, 3.0));
+      currentZoom = zoom;
+
+      canvas.setWidth(originalNativeW * zoom);
+      canvas.setHeight(originalNativeH * zoom);
+      canvas.setZoom(zoom);
+      canvas.renderAll();
+
+      zoomPercentLabel.innerText = `${Math.round(zoom * 100)}%`;
+    }
+
+    // 最適全圖 (Fit to Screen) - 完美解決長型/大圖截斷問題！
+    function fitToScreen() {
+      if (!canvas) return;
+      const vpWidth = canvasViewport.clientWidth || 800;
+      const vpHeight = canvasViewport.clientHeight || 550;
+
+      // 保留邊界安全距離 (留出 32px 邊距)
+      const availW = Math.max(vpWidth - 36, 200);
+      const availH = Math.max(vpHeight - 36, 200);
+
+      const scaleX = availW / originalNativeW;
+      const scaleY = availH / originalNativeH;
+      const bestScale = Math.min(scaleX, scaleY, 1.0); // 最大不超過 100%
+
+      applyZoom(bestScale);
+    }
+
+    btnZoomIn.addEventListener('click', () => applyZoom(currentZoom + 0.1));
+    btnZoomOut.addEventListener('click', () => applyZoom(currentZoom - 0.1));
+    btnZoomReset.addEventListener('click', () => applyZoom(1.0));
+    btnFitScreen.addEventListener('click', fitToScreen);
+
+    // 視窗大小變更時若畫布有圖可自適應
+    window.addEventListener('resize', () => {
+      if (currentImageObj) {
+        fitToScreen();
+      }
+    });
+
+    // 滾輪縮放 (Ctrl/Cmd + 滾輪)
+    canvasViewport.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.08 : 0.08;
+        applyZoom(currentZoom + delta);
+      }
+    }, { passive: false });
 
     // -------------------------------------------------------------
-    // 3. API Key 管理 (localStorage)
+    // 5. 遮罩塗抹「上一步 (Undo) / 下一步 (Redo)」系統
+    // -------------------------------------------------------------
+    function updateUndoRedoUI() {
+      btnUndoMask.disabled = maskUndoStack.length === 0;
+      btnRedoMask.disabled = maskRedoStack.length === 0;
+    }
+
+    function undoLastMask() {
+      if (maskUndoStack.length > 0) {
+        const lastPath = maskUndoStack.pop();
+        canvas.remove(lastPath);
+        maskRedoStack.push(lastPath);
+        canvas.renderAll();
+        updateUndoRedoUI();
+        showStatus('已撤銷最後一筆塗抹 (Undo)', 'info');
+      }
+    }
+
+    function redoLastMask() {
+      if (maskRedoStack.length > 0) {
+        const path = maskRedoStack.pop();
+        canvas.add(path);
+        maskUndoStack.push(path);
+        canvas.renderAll();
+        updateUndoRedoUI();
+        showStatus('已恢復塗抹 (Redo)', 'info');
+      }
+    }
+
+    btnUndoMask.addEventListener('click', undoLastMask);
+    btnRedoMask.addEventListener('click', redoLastMask);
+
+    // 支援全域快捷鍵 Cmd+Z / Ctrl+Z
+    window.addEventListener('keydown', (e) => {
+      const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+      if (isInput) return;
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undoLastMask();
+      } else if ((e.metaKey || e.ctrlKey) && (e.shiftKey && e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
+        e.preventDefault();
+        redoLastMask();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // 6. API Key 管理 (localStorage)
     // -------------------------------------------------------------
     function getApiKey() {
       return localStorage.getItem('openai_api_key') || '';
@@ -553,10 +778,10 @@
       if (key && key.startsWith('sk-')) {
         const masked = key.slice(0, 6) + '...' + key.slice(-4);
         keyStatusLabel.innerText = `Key: ${masked}`;
-        keyStatusLabel.classList.add('text-emerald-400');
+        keyStatusLabel.classList.add('text-emerald-500');
       } else {
         keyStatusLabel.innerText = '設定 API Key';
-        keyStatusLabel.classList.remove('text-emerald-400');
+        keyStatusLabel.classList.remove('text-emerald-500');
       }
     }
 
@@ -570,11 +795,7 @@
     });
 
     btnToggleKeyVisibility.addEventListener('click', () => {
-      if (inputApiKey.type === 'password') {
-        inputApiKey.type = 'text';
-      } else {
-        inputApiKey.type = 'password';
-      }
+      inputApiKey.type = inputApiKey.type === 'password' ? 'text' : 'password';
     });
 
     btnSaveKey.addEventListener('click', () => {
@@ -586,7 +807,7 @@
       localStorage.setItem('openai_api_key', val);
       updateKeyStatusUI();
       keyModal.classList.add('hidden');
-      showStatus('✅ API Key 已安全保存在瀏覽器中', 'success');
+      showStatus('✅ API Key 已安全保存在本機瀏覽器中', 'success');
     });
 
     btnClearSavedKey.addEventListener('click', () => {
@@ -596,12 +817,11 @@
       showStatus('已清除儲存的 API Key', 'info');
     });
 
-    // 說明彈窗
     btnHelp.addEventListener('click', () => helpModal.classList.remove('hidden'));
     btnCloseHelpModal.addEventListener('click', () => helpModal.classList.add('hidden'));
 
     // -------------------------------------------------------------
-    // 4. 模式切換與工具列
+    // 7. 模式切換與工具列
     // -------------------------------------------------------------
     tabGenerate.addEventListener('click', () => switchMode('generate'));
     tabEdit.addEventListener('click', () => switchMode('edit'));
@@ -610,16 +830,16 @@
       currentMode = mode;
       if (mode === 'generate') {
         tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
-        tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60";
+        tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
         btnExecuteText.innerText = "立即生成圖片 (GPT 2.5)";
-        promptLabel.innerHTML = '<i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-400"></i> 生圖提示詞 (Prompt)';
+        promptLabel.innerHTML = '<i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)';
         inpaintGuideBox.classList.add('hidden');
         setTool('select');
       } else {
         tabEdit.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all bg-emerald-600 text-white shadow-md";
-        tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-white hover:bg-slate-800/60";
+        tabGenerate.className = "flex-1 py-2 px-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
         btnExecuteText.innerText = "開始局部修圖 (AI Inpaint)";
-        promptLabel.innerHTML = '<i data-lucide="brush" class="w-3.5 h-3.5 text-rose-400"></i> 局部修改描述 (請描述塗抹區塊想替換成什麼)';
+        promptLabel.innerHTML = '<i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部修改描述 (請描述塗抹區塊想替換成什麼)';
         inpaintGuideBox.classList.remove('hidden');
         setTool('brush');
       }
@@ -630,17 +850,17 @@
       activeTool = tool;
       if (tool === 'brush') {
         canvas.isDrawingMode = true;
-        canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.65)';
+        canvas.freeDrawingBrush.color = 'rgba(239, 68, 68, 0.7)';
         canvas.freeDrawingBrush.width = parseInt(brushSize.value, 10);
-        toolBrush.classList.add('bg-slate-800', 'text-rose-400');
-        toolSelect.classList.remove('bg-slate-800', 'text-emerald-400');
+        toolBrush.classList.add('bg-rose-100', 'dark:bg-slate-800', 'text-rose-500');
+        toolSelect.classList.remove('bg-emerald-50', 'dark:bg-slate-800', 'text-emerald-600', 'dark:text-emerald-400');
         brushSizeControl.classList.remove('hidden');
         brushSizeControl.classList.add('flex');
         toolClearMask.classList.remove('hidden');
       } else {
         canvas.isDrawingMode = false;
-        toolSelect.classList.add('bg-slate-800', 'text-emerald-400');
-        toolBrush.classList.remove('bg-slate-800', 'text-rose-400');
+        toolSelect.classList.add('bg-emerald-50', 'dark:bg-slate-800', 'text-emerald-600', 'dark:text-emerald-400');
+        toolBrush.classList.remove('bg-rose-100', 'dark:bg-slate-800', 'text-rose-500');
         brushSizeControl.classList.add('hidden');
         brushSizeControl.classList.remove('flex');
       }
@@ -657,10 +877,10 @@
       }
     });
 
-    // 清除遮罩
+    // 清除所有遮罩
     toolClearMask.addEventListener('click', () => {
       clearMaskPaths();
-      showStatus('已清除塗抹遮罩', 'info');
+      showStatus('已清除所有塗抹遮罩', 'info');
     });
 
     function clearMaskPaths() {
@@ -670,10 +890,13 @@
           canvas.remove(objects[i]);
         }
       }
+      maskUndoStack = [];
+      maskRedoStack = [];
+      updateUndoRedoUI();
       canvas.renderAll();
     }
 
-    // 刪除選取的物件 (文字或圖層)
+    // 刪除選取的物件
     btnDeleteSelected.addEventListener('click', () => {
       const activeObj = canvas.getActiveObject();
       if (activeObj) {
@@ -683,7 +906,7 @@
       }
     });
 
-    // 鍵盤 Delete 支援
+    // 鍵盤 Delete
     window.addEventListener('keydown', (e) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
         const activeObj = canvas.getActiveObject();
@@ -708,67 +931,65 @@
       inputPrompt.value = '';
     });
 
-    // 模型 Badge 切換更新
+    // 模型 Badge 更新
     selectModel.addEventListener('change', () => {
       const badge = document.getElementById('modelBadge');
       if (selectModel.value === 'gpt-image-2.5-sunburst') {
         badge.innerText = '旗艦修圖';
-        badge.className = 'text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full font-mono';
+        badge.className = 'text-[10px] bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold';
       } else if (selectModel.value === 'gpt-image-2.5-flare') {
         badge.innerText = '極速生圖';
-        badge.className = 'text-[10px] bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full font-mono';
+        badge.className = 'text-[10px] bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-mono font-bold';
       } else {
         badge.innerText = '相容模式';
-        badge.className = 'text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-mono';
+        badge.className = 'text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-full font-mono font-bold';
       }
     });
 
     // -------------------------------------------------------------
-    // 5. 梗圖文字系統 (Meme Typography)
+    // 8. 文字圖層系統
     // -------------------------------------------------------------
-    function addMemeText(text, pos = 'custom') {
-      const cWidth = canvas.getWidth();
-      const cHeight = canvas.getHeight();
+    function addTextToCanvas(text, pos = 'custom') {
+      const cWidth = originalNativeW;
+      const cHeight = originalNativeH;
 
       let top = cHeight / 2;
       let left = cWidth / 2;
-      let fontSize = 48;
+      let fontSize = Math.max(38, Math.floor(cWidth / 16));
 
       if (pos === 'top') {
-        top = 40;
-        fontSize = Math.max(36, Math.floor(cWidth / 18));
+        top = 60;
       } else if (pos === 'bottom') {
-        top = cHeight - 90;
-        fontSize = Math.max(36, Math.floor(cWidth / 18));
+        top = cHeight - 120;
       }
 
-      const memeText = new fabric.IText(text, {
+      const txt = new fabric.IText(text, {
         left: left,
         top: top,
         originX: 'center',
         originY: 'top',
-        fontFamily: 'Impact, "Noto Sans TC", sans-serif',
+        fontFamily: '"Noto Sans TC", Impact, sans-serif',
         fontSize: fontSize,
         fontWeight: 'bold',
         fill: '#FFFFFF',
         stroke: '#000000',
         strokeWidth: 4,
-        paintFirst: 'stroke', // 先畫外框描邊，確保字體清晰飽滿！
+        paintFirst: 'stroke',
         cornerColor: '#10b981',
         cornerStyle: 'circle',
         borderColor: '#10b981',
         transparentCorners: false
       });
 
-      canvas.add(memeText);
-      canvas.setActiveObject(memeText);
+      canvas.add(txt);
+      canvas.setActiveObject(txt);
       setTool('select');
       canvas.renderAll();
     }
 
-    btnAddTopText.addEventListener('click', () => addMemeText('當政客說：這一切都是為了人民', 'top'));
-    btnAddBottomText.addEventListener('click', () => addMemeText('但你的錢包卻越來越扁', 'bottom'));
-    btnAddCustomText.addEventListener('click', () => addMemeText('點擊編輯自訂文字', 'custom'));
+    btnAddTopText.addEventListener('click', () => addTextToCanvas('早安！美好的一天從此刻開始', 'top'));
+    btnAddBottomText.addEventListener('click', () => addTextToCanvas('願今天被滿滿綠意與溫暖包圍', 'bottom'));
+    btnAddCustomText.addEventListener('click', () => addTextToCanvas('點擊雙擊可編輯文字', 'custom'));
 
     function onObjectSelected(e) {
       const obj = e.selected ? e.selected[0] : canvas.getActiveObject();
@@ -839,12 +1060,12 @@
     });
 
     // -------------------------------------------------------------
-    // 6. 載入圖片至畫布
+    // 9. 載入圖片至畫布與自動適應全圖
     // -------------------------------------------------------------
     function loadImageToCanvas(imgUrl, customWidth, customHeight) {
       fabric.Image.fromURL(imgUrl, function(img) {
-        const targetW = customWidth || img.width || 800;
-        const targetH = customHeight || img.height || 800;
+        const targetW = customWidth || img.width || 864;
+        const targetH = customHeight || img.height || 1536;
 
         initCanvas(targetW, targetH);
 
@@ -862,10 +1083,13 @@
         canvas.sendToBack(img);
         canvasEmptyState.classList.add('hidden');
         canvas.renderAll();
+
+        // 載入完成後立即自動縮放到最適全圖大小！
+        fitToScreen();
       }, { crossOrigin: 'anonymous' });
     }
 
-    // 本機上傳圖片支援
+    // 本機圖片上傳
     fileUpload.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -879,7 +1103,7 @@
     });
 
     // -------------------------------------------------------------
-    // 7. OpenAI API 核心呼叫 (Generation & Inpaint Edit)
+    // 10. OpenAI API 核心連線 (生圖與局部修圖)
     // -------------------------------------------------------------
     btnExecute.addEventListener('click', async () => {
       const apiKey = getApiKey();
@@ -903,7 +1127,7 @@
       }
     });
 
-    // 7.1 全新生圖 (Image Generation)
+    // 10.1 全新生圖
     async function executeGeneration(apiKey, prompt) {
       setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
       try {
@@ -921,7 +1145,6 @@
           output_format: format
         };
 
-        // GPT Image 2.5 專屬參數
         if (model.startsWith('gpt-image-2.5')) {
           payload.quality = quality;
           payload.background = background;
@@ -954,7 +1177,7 @@
         const [w, h] = size.split('x').map(Number);
         loadImageToCanvas(imgUrl, w, h);
         addToHistory(imgUrl, prompt);
-        showStatus('🎉 圖片生成成功！可在右側畫布加入梗圖文字或進行修圖', 'success');
+        showStatus('🎉 圖片生成成功！已自動調整為最適全圖預覽', 'success');
       } catch (err) {
         console.error('生圖失敗:', err);
         showStatus(`❌ 生成失敗：${err.message}`, 'error');
@@ -963,32 +1186,35 @@
       }
     }
 
-    // 7.2 局部遮罩修圖 (Inpainting Edits via /v1/images/edits)
+    // 10.2 局部遮罩修圖
     async function executeInpaint(apiKey, prompt) {
       if (!currentImageObj) {
         showStatus('畫布上無原圖！請先生成圖片或開啟本機圖片', 'error');
         return;
       }
 
-      // 檢查是否有塗抹遮罩路徑
       const maskObjects = canvas.getObjects().filter(o => o.isMaskPath);
       if (maskObjects.length === 0) {
         showStatus('請先在畫布上塗抹紅色遮罩，標註想修改的區域！', 'error');
         return;
       }
 
-      setLoading(true, '正在合成遮罩並送至 OpenAI Edits 進行局部重繪...');
+      setLoading(true, '正在合成高解析遮罩並送至 OpenAI Edits 進行局部重繪...');
       try {
-        const cWidth = canvas.getWidth();
-        const cHeight = canvas.getHeight();
+        const nativeW = originalNativeW;
+        const nativeH = originalNativeH;
         const model = selectModel.value.startsWith('gpt-image-2.5') ? selectModel.value : 'gpt-image-2.5-sunburst';
 
-        // 1. 產生原圖 PNG Blob (底圖，隱藏所有文字與塗抹遮罩)
+        // 為了取得滿版原生解析度，暫時還原 Zoom=1.0 導出底圖與遮罩
+        const savedZoom = currentZoom;
+        applyZoom(1.0);
+
+        // 1. 產生原圖底圖 PNG Blob (隱藏非背景圖層)
         const allObjects = canvas.getObjects();
-        const hiddenObjects = [];
+        const hiddenStates = [];
         allObjects.forEach(obj => {
           if (obj !== currentImageObj) {
-            hiddenObjects.push({ obj: obj, vis: obj.visible });
+            hiddenStates.push({ obj: obj, vis: obj.visible });
             obj.visible = false;
           }
         });
@@ -997,48 +1223,42 @@
         const baseDataUrl = canvas.toDataURL({ format: 'png', multiplier: 1 });
         const baseBlob = await (await fetch(baseDataUrl)).blob();
 
-        // 2. 產生 OpenAI 格式的遮罩 Mask PNG Blob
-        // OpenAI 要求：要修改的區域為完全透明 (alpha = 0)，保留的區域為不透明 (alpha != 0)
+        // 2. 產生 OpenAI 格式遮罩 (修改區透明 alpha=0，保留區不透明 alpha=255)
         const maskCanvas = document.createElement('canvas');
-        maskCanvas.width = cWidth;
-        maskCanvas.height = cHeight;
+        maskCanvas.width = nativeW;
+        maskCanvas.height = nativeH;
         const maskCtx = maskCanvas.getContext('2d');
 
-        // 先填滿白色不透明（保留區）
         maskCtx.fillStyle = '#FFFFFF';
-        maskCtx.fillRect(0, 0, cWidth, cHeight);
+        maskCtx.fillRect(0, 0, nativeW, nativeH);
 
-        // 將遮罩路徑以 destination-out 模式繪製（挖成透明）
         maskCtx.globalCompositeOperation = 'destination-out';
         
-        // 臨時將只顯示 maskObjects 的 canvas 畫上
         const tempMaskCanvas = document.createElement('canvas');
-        tempMaskCanvas.width = cWidth;
-        tempMaskCanvas.height = cHeight;
+        tempMaskCanvas.width = nativeW;
+        tempMaskCanvas.height = nativeH;
         const tempMaskCtx = tempMaskCanvas.getContext('2d');
 
-        // 將每個遮罩路徑畫入
         maskObjects.forEach(path => {
           path.render(tempMaskCtx);
         });
 
-        // 塗抹區域挖成透明
         maskCtx.drawImage(tempMaskCanvas, 0, 0);
-
         const maskBlob = await new Promise(resolve => maskCanvas.toBlob(resolve, 'image/png'));
 
-        // 恢復原畫布物件顯示
-        hiddenObjects.forEach(item => item.obj.visible = item.vis);
+        // 恢復原圖層顯示與縮放比例
+        hiddenStates.forEach(item => item.obj.visible = item.vis);
+        applyZoom(savedZoom);
         canvas.renderAll();
 
-        // 3. 發送 FormData 給 OpenAI /v1/images/edits
+        // 3. 發送 FormData 給 OpenAI
         const formData = new FormData();
         formData.append('image', baseBlob, 'image.png');
         formData.append('mask', maskBlob, 'mask.png');
         formData.append('prompt', prompt);
         formData.append('model', model);
         formData.append('n', '1');
-        formData.append('size', `${cWidth}x${cHeight}`);
+        formData.append('size', `${nativeW}x${nativeH}`);
 
         const response = await fetch('https://api.openai.com/v1/images/edits', {
           method: 'POST',
@@ -1056,9 +1276,8 @@
         const imgData = data.data[0];
         const newImgUrl = imgData.b64_json ? `data:image/png;base64,${imgData.b64_json}` : imgData.url;
 
-        // 清除舊遮罩並載入修正後的圖片
         clearMaskPaths();
-        loadImageToCanvas(newImgUrl, cWidth, cHeight);
+        loadImageToCanvas(newImgUrl, nativeW, nativeH);
         addToHistory(newImgUrl, '局部修改: ' + prompt);
         showStatus('✨ 局部重繪修圖完成！', 'success');
 
@@ -1071,11 +1290,13 @@
     }
 
     // -------------------------------------------------------------
-    // 8. 存檔、複製與歷史紀錄
+    // 11. 存檔與導出 (保證滿版高解析度)
     // -------------------------------------------------------------
-    // 一鍵下載
     btnDownload.addEventListener('click', () => {
-      // 導出時先暫時隱藏塗抹遮罩路徑
+      // 暫存縮放與隱藏遮罩
+      const savedZoom = currentZoom;
+      applyZoom(1.0);
+
       const maskObjects = canvas.getObjects().filter(o => o.isMaskPath);
       maskObjects.forEach(o => o.visible = false);
       canvas.discardActiveObject();
@@ -1087,40 +1308,44 @@
         multiplier: 1
       });
 
-      // 恢復遮罩顯示
+      // 恢復狀態
       maskObjects.forEach(o => o.visible = true);
+      applyZoom(savedZoom);
       canvas.renderAll();
 
       const link = document.createElement('a');
-      link.download = `政治梗圖_${new Date().toISOString().slice(0,10)}_${Date.now()}.png`;
+      link.download = `AI創作圖卡_${new Date().toISOString().slice(0,10)}_${Date.now()}.png`;
       link.href = dataURL;
       link.click();
-      showStatus('📥 圖片已下載至您的電腦', 'success');
+      showStatus('📥 高解析圖片已下載至您的電腦', 'success');
     });
 
-    // 複製圖片至剪貼簿
     btnCopyImage.addEventListener('click', async () => {
       try {
+        const savedZoom = currentZoom;
+        applyZoom(1.0);
+
         const maskObjects = canvas.getObjects().filter(o => o.isMaskPath);
         maskObjects.forEach(o => o.visible = false);
         canvas.discardActiveObject();
         canvas.renderAll();
 
-        const dataURL = canvas.toDataURL({ format: 'png' });
+        const dataURL = canvas.toDataURL({ format: 'png', multiplier: 1 });
         maskObjects.forEach(o => o.visible = true);
+        applyZoom(savedZoom);
         canvas.renderAll();
 
         const blob = await (await fetch(dataURL)).blob();
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
         ]);
-        showStatus('📋 已複製圖片到剪貼簿，可直接貼上至社群或聊天軟體！', 'success');
+        showStatus('📋 已複製圖片到剪貼簿，可直接在通訊或社群軟體按貼上！', 'success');
       } catch (err) {
-        showStatus('無法直接複製圖片，請使用「下載」功能', 'error');
+        showStatus('無法直接複製圖片，請改用「下載」功能', 'error');
       }
     });
 
-    // 加入歷史紀錄
+    // 歷史紀錄
     function addToHistory(url, title) {
       historyList.unshift({ url, title, time: new Date().toLocaleTimeString() });
       renderHistory();
@@ -1134,9 +1359,9 @@
       historyEmptyMsg.classList.add('hidden');
       historyStrip.innerHTML = '';
 
-      historyList.forEach((item, index) => {
+      historyList.forEach((item) => {
         const thumb = document.createElement('div');
-        thumb.className = 'group relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-800 hover:border-emerald-500 cursor-pointer shadow-md transition-all';
+        thumb.className = 'group relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:border-emerald-500 cursor-pointer shadow-md transition-all';
         thumb.title = item.title;
         thumb.innerHTML = `
           <img src="${item.url}" class="w-full h-full object-cover">
@@ -1146,7 +1371,7 @@
         `;
         thumb.addEventListener('click', () => {
           loadImageToCanvas(item.url);
-          showStatus('已從歷史紀錄載入圖片至畫布', 'info');
+          showStatus('已載入歷史圖片至畫布', 'info');
         });
         historyStrip.appendChild(thumb);
       });
@@ -1159,9 +1384,7 @@
       showStatus('已清空歷史紀錄', 'info');
     });
 
-    // -------------------------------------------------------------
-    // 9. 輔助提示與 Loading 控制
-    // -------------------------------------------------------------
+    // 狀態與輔助控制
     function setLoading(isLoading, message = '') {
       btnExecute.disabled = isLoading;
       if (isLoading) {
@@ -1172,17 +1395,17 @@
     }
 
     function showStatus(message, type = 'info') {
-      statusAlert.classList.remove('hidden', 'bg-emerald-950/80', 'text-emerald-300', 'border-emerald-800', 'bg-rose-950/80', 'text-rose-300', 'border-rose-800', 'bg-slate-800', 'text-slate-300', 'border-slate-700');
+      statusAlert.classList.remove('hidden', 'bg-emerald-50', 'dark:bg-emerald-950/80', 'text-emerald-700', 'dark:text-emerald-300', 'border-emerald-200', 'dark:border-emerald-800', 'bg-rose-50', 'dark:bg-rose-950/80', 'text-rose-700', 'dark:text-rose-300', 'border-rose-200', 'dark:border-rose-800', 'bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300', 'border-slate-300', 'dark:border-slate-700');
       
       let icon = 'info';
       if (type === 'success') {
-        statusAlert.classList.add('bg-emerald-950/80', 'text-emerald-300', 'border', 'border-emerald-800');
+        statusAlert.classList.add('bg-emerald-50', 'dark:bg-emerald-950/80', 'text-emerald-700', 'dark:text-emerald-300', 'border', 'border-emerald-200', 'dark:border-emerald-800');
         icon = 'check-circle';
       } else if (type === 'error') {
-        statusAlert.classList.add('bg-rose-950/80', 'text-rose-300', 'border', 'border-rose-800');
+        statusAlert.classList.add('bg-rose-50', 'dark:bg-rose-950/80', 'text-rose-700', 'dark:text-rose-300', 'border', 'border-rose-200', 'dark:border-rose-800');
         icon = 'alert-triangle';
       } else {
-        statusAlert.classList.add('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+        statusAlert.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300', 'border', 'border-slate-300', 'dark:border-slate-700');
       }
 
       statusAlert.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i> <span>${message}</span>`;
@@ -1194,7 +1417,8 @@
       }, 7000);
     }
 
-    // 初始化狀態
+    // 啟動時預設初始化
+    initCanvas(864, 1536);
     updateKeyStatusUI();
   </script>
 </body>
