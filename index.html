@@ -690,14 +690,22 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-stretch sm:items-start gap-2.5">
           <div class="relative flex-1">
-            <input type="text" id="inputQuickRefine" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner" placeholder="💬 輸入修正需求... 例如：背景改為溫暖珊瑚粉、文字改為「...」、人物眼神與微笑更自然親切">
+            <textarea id="inputQuickRefine" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner custom-scrollbar resize-none leading-relaxed min-h-[64px] max-h-[220px]" placeholder="💬 輸入修正需求（支援 Shift + Enter 跳行換行，Enter 送出）...&#10;例如：&#10;- 兩個人不用疊在一起，稍微分開一點&#10;- 右邊的人可以縮小一點點，配合左邊大小&#10;- 移除畫面中的外框與雜點"></textarea>
           </div>
-          <button type="button" id="btnExecuteQuickRefine" class="flex-shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center gap-1.5 shadow-md shadow-blue-600/25 transition-all cursor-pointer">
+          <button type="button" id="btnExecuteQuickRefine" class="flex-shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 transition-all cursor-pointer min-h-[64px] min-w-[100px]">
             <i data-lucide="sparkles" class="w-4 h-4"></i>
             <span id="btnQuickRefineText">立即修正</span>
           </button>
+        </div>
+
+        <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 -mt-1">
+          <span class="flex items-center gap-1">
+            <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[9.5px] font-mono">Shift + Enter</kbd> 跳行換行 ‧ 
+            <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[9.5px] font-mono">Enter</kbd> 送出修正
+          </span>
+          <span class="text-slate-400 dark:text-slate-500">支援多行列點指示</span>
         </div>
 
         <!-- 快速微調靈感標籤 -->
@@ -2944,11 +2952,28 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       });
     }
 
+    function autoResizeQuickRefine() {
+      if (!inputQuickRefine) return;
+      inputQuickRefine.style.height = 'auto';
+      inputQuickRefine.style.height = Math.min(Math.max(inputQuickRefine.scrollHeight, 64), 220) + 'px';
+    }
+
     if (inputQuickRefine) {
+      inputQuickRefine.addEventListener('input', autoResizeQuickRefine);
+
       inputQuickRefine.addEventListener('keydown', (e) => {
+        // 輸入法組字中（例如注音選字、拼音選字），按 Enter 不觸發送出
+        if (e.isComposing || e.keyCode === 229) return;
+
         if (e.key === 'Enter') {
-          e.preventDefault();
-          btnExecuteQuickRefine.click();
+          if (e.shiftKey) {
+            // Shift + Enter: 允許正常換行跳行
+            setTimeout(autoResizeQuickRefine, 10);
+          } else {
+            // 單獨 Enter 或 Cmd/Ctrl + Enter: 立即送出修正
+            e.preventDefault();
+            btnExecuteQuickRefine.click();
+          }
         }
       });
     }
@@ -2959,8 +2984,9 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const addition = tag.getAttribute('data-refine');
         if (!addition) return;
         const current = inputQuickRefine.value.trim();
-        inputQuickRefine.value = current ? `${current}，${addition}` : addition;
+        inputQuickRefine.value = current ? `${current}\n- ${addition}` : `- ${addition}`;
         inputPrompt.value = inputQuickRefine.value;
+        autoResizeQuickRefine();
         inputQuickRefine.focus();
       });
     });
