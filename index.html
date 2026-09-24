@@ -569,6 +569,12 @@
 
           <div class="h-4 w-px bg-slate-200 dark:bg-slate-800 mx-0.5"></div>
 
+          <!-- 棋盤透明 / 預覽深底 快速切換按鈕 -->
+          <button type="button" id="btnToggleTransGrid" class="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-[11px] transition-colors cursor-pointer" title="切換透明棋盤格 / 深色海報預覽底色 (檢驗透明去背效果)">
+            <i data-lucide="grid" class="w-3.5 h-3.5 text-indigo-500"></i>
+            <span id="btnTransGridText" class="hidden sm:inline">預覽深底</span>
+          </button>
+
           <!-- 暗房調色按鈕 -->
           <button type="button" id="btnDarkroomToggle" class="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium text-[11px] transition-colors" title="自訂暗房背景色調 (灰階/RGB)">
             <i data-lucide="palette" class="w-3.5 h-3.5 text-amber-500"></i>
@@ -677,9 +683,15 @@
           </div>
         </div>
 
-        <!-- 畫布左下角原生尺寸資訊標籤 -->
-        <div class="absolute bottom-3 left-4 bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-500 dark:text-slate-400 shadow-sm">
-          原生解析度: <span id="canvasSizeLabel">864 x 1536</span> px
+        <!-- 畫布左下角原生尺寸與透明圖層資訊標籤 -->
+        <div class="absolute bottom-3 left-4 flex items-center gap-2">
+          <div class="bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono text-slate-500 dark:text-slate-400 shadow-sm">
+            原生解析度: <span id="canvasSizeLabel">864 x 1536</span> px
+          </div>
+          <div id="transparencyIndicator" class="bg-white/90 dark:bg-slate-950/80 backdrop-blur border border-slate-200 dark:border-slate-800 px-2.5 py-1 rounded-md text-[11px] text-slate-500 dark:text-slate-400 shadow-sm flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>🏁 灰白棋盤格代表<strong>【透明無底色】</strong>，下載即為純透明 PNG</span>
+          </div>
         </div>
 
       </div>
@@ -927,9 +939,12 @@
     const btnFitScreen = document.getElementById('btnFitScreen');
     const zoomPercentLabel = document.getElementById('zoomPercentLabel');
 
-    // 暗房調色控制項
+    // 暗房調色與透明預覽控制項
     const canvasCard = document.getElementById('canvasCard');
     const btnDarkroomToggle = document.getElementById('btnDarkroomToggle');
+    const btnToggleTransGrid = document.getElementById('btnToggleTransGrid');
+    const btnTransGridText = document.getElementById('btnTransGridText');
+    const transparencyIndicator = document.getElementById('transparencyIndicator');
     const darkroomPanel = document.getElementById('darkroomPanel');
     const btnCloseDarkroom = document.getElementById('btnCloseDarkroom');
     const btnResetDarkroom = document.getElementById('btnResetDarkroom');
@@ -1822,6 +1837,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       }).join('').toUpperCase();
     }
 
+    let isDarkPreview = false;
+
     function applyDarkroomColor(r, g, b, scope = 'canvas') {
       const hex = rgbToHex(r, g, b);
       if (labelHexVal) labelHexVal.innerText = hex;
@@ -1844,12 +1861,30 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         if (btnScopeAll) btnScopeAll.className = 'px-2 py-0.5 text-[10px] rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
       }
 
+      if (canvasWrapper) {
+        canvasWrapper.classList.remove('canvas-checkerboard');
+        canvasWrapper.style.backgroundImage = 'none';
+        canvasWrapper.style.backgroundColor = hex;
+      }
+      isDarkPreview = true;
+      if (btnTransGridText) btnTransGridText.innerText = '棋盤透明';
+
       localStorage.setItem('darkroom_config', JSON.stringify({ r, g, b, scope, enabled: true }));
     }
 
     function resetDarkroomColor() {
       if (canvasCard) canvasCard.style.backgroundColor = '';
       document.body.style.backgroundColor = '';
+      if (canvasWrapper) {
+        canvasWrapper.classList.add('canvas-checkerboard');
+        canvasWrapper.style.backgroundImage = '';
+        canvasWrapper.style.backgroundColor = '';
+      }
+      isDarkPreview = false;
+      if (btnTransGridText) btnTransGridText.innerText = '預覽深底';
+      if (transparencyIndicator) {
+        transparencyIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>🏁 灰白棋盤格代表<strong>【透明無底色】</strong>，下載即為純透明 PNG</span>';
+      }
       localStorage.removeItem('darkroom_config');
       if (sliderR) sliderR.value = 46;
       if (sliderG) sliderG.value = 46;
@@ -1965,6 +2000,38 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     }
 
     initDarkroom();
+
+    // -------------------------------------------------------------
+    // 5.6 棋盤透明格 / 深色海報預覽底色 一鍵快速切換
+    // -------------------------------------------------------------
+    if (btnToggleTransGrid) {
+      btnToggleTransGrid.addEventListener('click', () => {
+        isDarkPreview = !isDarkPreview;
+        if (isDarkPreview) {
+          if (canvasWrapper) {
+            canvasWrapper.classList.remove('canvas-checkerboard');
+            canvasWrapper.style.backgroundImage = 'none';
+            canvasWrapper.style.backgroundColor = '#0f172a';
+          }
+          if (btnTransGridText) btnTransGridText.innerText = '棋盤透明';
+          if (transparencyIndicator) {
+            transparencyIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>⬛ 目前為【深色預覽底色】（折線圖浮空，下載依舊為純透明 PNG）</span>';
+          }
+          showStatus('⬛ 已切換為【深色預覽底色】！棋盤網格已隱藏，折線圖浮在深色海報底色上，證明背景為 100% 透明。（點擊「下載完成圖」依舊為純透明 PNG）', 'success', 6000);
+        } else {
+          if (canvasWrapper) {
+            canvasWrapper.classList.add('canvas-checkerboard');
+            canvasWrapper.style.backgroundImage = '';
+            canvasWrapper.style.backgroundColor = '';
+          }
+          if (btnTransGridText) btnTransGridText.innerText = '預覽深底';
+          if (transparencyIndicator) {
+            transparencyIndicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>🏁 灰白棋盤格代表<strong>【透明無底色】</strong>，下載即為純透明 PNG</span>';
+          }
+          showStatus('🏁 已切換回【透明棋盤格】顯示模式（方格代表透明無底色）', 'info');
+        }
+      });
+    }
 
     function updateMaskDetectionUI() {
       if (!canvas) return;
