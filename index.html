@@ -215,6 +215,23 @@
               <option value="jpeg">JPEG</option>
             </select>
           </div>
+
+          <!-- 生成張數 (n)：1~4 張或依 OpenAI 建議自動決定 -->
+          <div class="col-span-2">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i> 生成張數
+              </label>
+              <span id="countHint" class="text-[10px] text-slate-400">每張分別計費</span>
+            </div>
+            <div id="countSelector" class="grid grid-cols-5 gap-1 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-1" role="radiogroup" aria-label="生成張數">
+              <button type="button" class="count-btn py-1.5 rounded-lg text-xs font-bold transition-colors" data-count="1" role="radio">1 張</button>
+              <button type="button" class="count-btn py-1.5 rounded-lg text-xs font-bold transition-colors" data-count="2" role="radio">2 張</button>
+              <button type="button" class="count-btn py-1.5 rounded-lg text-xs font-bold transition-colors" data-count="3" role="radio">3 張</button>
+              <button type="button" class="count-btn py-1.5 rounded-lg text-xs font-bold transition-colors" data-count="4" role="radio">4 張</button>
+              <button type="button" class="count-btn py-1.5 rounded-lg text-[11px] font-bold transition-colors" data-count="auto" role="radio" title="依 OpenAI 建議：草稿 (Low) 多張比稿、一般 (Medium/Auto) 2 張、精修 (High 以上) 或 4K 只出 1 張">建議</button>
+            </div>
+          </div>
         </div>
 
         <!-- 提示詞 Prompt 輸入 -->
@@ -404,10 +421,14 @@
         </div>
 
         <!-- 執行按鈕 -->
-        <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none">
+        <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none" title="快捷鍵：在提示詞框按 Ctrl/⌘ + Enter">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
           <span id="btnExecuteText">立即生成圖片 (GPT 2.5)</span>
         </button>
+        <div class="flex items-center justify-between -mt-2 px-1 text-[10px] text-slate-400">
+          <span><kbd class="font-mono">Ctrl/⌘ + Enter</kbd> 快速送出</span>
+          <button type="button" id="btnCancelRequest" class="hidden text-rose-500 hover:text-rose-600 font-bold underline">取消本次請求</button>
+        </div>
 
         <!-- 狀態提示框 -->
         <div id="statusAlert" class="hidden p-3 rounded-xl text-xs flex items-center gap-2"></div>
@@ -706,6 +727,25 @@
 
       </div>
 
+      <!-- ================= 本次多張生成結果挑選列 (n > 1 時顯示) ================= -->
+      <div id="resultsTray" class="hidden bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-800 rounded-2xl p-3 shadow-sm transition-colors">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+            <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-500"></i>
+            本次生成結果 (<span id="resultsTrayCount">0</span> 張) ‧ 點選縮圖載入畫布
+          </span>
+          <div class="flex items-center gap-3 text-[11px]">
+            <button type="button" id="btnDownloadAllResults" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> 全部下載
+            </button>
+            <button type="button" id="btnCloseResultsTray" class="text-slate-400 hover:text-slate-700 dark:hover:text-white" title="收起（圖片已存在歷史圖庫）">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div id="resultsTrayGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+      </div>
+
       <!-- ================= 畫布專屬：補充修正對話框 (全圖整體微調) ================= -->
       <div id="quickRefineCard" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm transition-colors flex flex-col gap-2.5">
         <div class="flex items-center justify-between">
@@ -918,6 +958,16 @@
     const chkAutoDownload = document.getElementById('chkAutoDownload');
     const canvasViewport = document.getElementById('canvasViewport');
     const canvasWrapper = document.getElementById('canvasWrapper');
+
+    // 生成張數 / 取消請求 / 多張結果挑選列
+    const countSelector = document.getElementById('countSelector');
+    const countHint = document.getElementById('countHint');
+    const btnCancelRequest = document.getElementById('btnCancelRequest');
+    const resultsTray = document.getElementById('resultsTray');
+    const resultsTrayGrid = document.getElementById('resultsTrayGrid');
+    const resultsTrayCount = document.getElementById('resultsTrayCount');
+    const btnDownloadAllResults = document.getElementById('btnDownloadAllResults');
+    const btnCloseResultsTray = document.getElementById('btnCloseResultsTray');
 
     // 深度 Prompt 模式元素
     const btnModePolicy = document.getElementById('btnModePolicy');
@@ -1534,13 +1584,75 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       inputPrompt.focus();
     }
 
+    // -------------------------------------------------------------
+    // 生成張數 (n) 控制狀態與建議決策
+    // -------------------------------------------------------------
+    let selectedCountSetting = localStorage.getItem('openaimeme_image_count') || '1';
+
+    function getEffectiveCount() {
+      if (selectedCountSetting !== 'auto') {
+        const parsed = parseInt(selectedCountSetting, 10);
+        return Math.min(4, Math.max(1, isNaN(parsed) ? 1 : parsed));
+      }
+      // auto (OpenAI 建議模式)：依畫質與解析度智能決定張數
+      const q = selectQuality ? selectQuality.value : 'auto';
+      const res = selectResolution ? selectResolution.value : '1024x1024';
+      if (res.includes('3840') || res.includes('2160') || q === 'high' || q === 'xhigh' || q === 'max') {
+        return 1; // 4K 或高精細畫質：單張專注精算
+      }
+      if (q === 'low') {
+        return 3; // 草稿快速比稿
+      }
+      return 2;   // 標準/中畫質：雙圖對照
+    }
+
+    function updateCountUI() {
+      if (!countSelector) return;
+      const effective = getEffectiveCount();
+      countSelector.querySelectorAll('.count-btn').forEach(btn => {
+        const val = btn.getAttribute('data-count');
+        const isActive = val === selectedCountSetting;
+        btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        if (isActive) {
+          btn.className = 'count-btn py-1.5 rounded-lg text-xs font-bold transition-all bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-slate-700';
+        } else {
+          btn.className = 'count-btn py-1.5 rounded-lg text-xs font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200';
+        }
+      });
+      if (countHint) {
+        if (selectedCountSetting === 'auto') {
+          countHint.innerText = `依畫質自動 (${effective} 張) ‧ 分別計費`;
+        } else if (selectedCountSetting === '1') {
+          countHint.innerText = '單張生成 ‧ 標準計費';
+        } else {
+          countHint.innerText = `批量 ${selectedCountSetting} 張 ‧ 每張分別計費`;
+        }
+      }
+      updateExecuteButtonText();
+    }
+
+    if (countSelector) {
+      countSelector.querySelectorAll('.count-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedCountSetting = btn.getAttribute('data-count') || '1';
+          localStorage.setItem('openaimeme_image_count', selectedCountSetting);
+          updateCountUI();
+        });
+      });
+    }
+
+    if (selectQuality) selectQuality.addEventListener('change', () => { if (selectedCountSetting === 'auto') updateCountUI(); });
+    if (selectResolution) selectResolution.addEventListener('change', () => { if (selectedCountSetting === 'auto') updateCountUI(); });
+
     // 更新執行按鈕文字
     function updateExecuteButtonText() {
+      const count = getEffectiveCount();
+      const countBadge = count > 1 ? ` (×${count} 張)` : '';
       if (currentMode === 'generate') {
         if (referenceImages.length > 0) {
-          btnExecuteText.innerText = `✨ 依據 ${referenceImages.length} 張素材生成 (多圖以圖生圖)`;
+          btnExecuteText.innerText = `✨ 依據 ${referenceImages.length} 張素材生成${countBadge}`;
         } else {
-          btnExecuteText.innerText = '立即生成圖片 (GPT 2.5)';
+          btnExecuteText.innerText = `立即生成圖片 (GPT 2.5)${countBadge}`;
         }
       } else if (currentMode === 'refine') {
         btnExecuteText.innerText = '🚀 依據畫布原圖送出整體修正 (GPT 2.5)';
@@ -2693,6 +2805,15 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       if (currentMode === 'generate') currentCanvasPrompt = inputPrompt.value.trim();
     });
 
+    inputPrompt.addEventListener('keydown', (e) => {
+      // 輸入法組字中不觸發
+      if (e.isComposing || e.keyCode === 229) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        btnExecute.click();
+      }
+    });
+
     selectModel.addEventListener('change', () => {
       const badge = document.getElementById('modelBadge');
       if (selectModel.value === 'gpt-image-2.5-sunburst') {
@@ -2997,17 +3118,161 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       return parts.join('\n');
     }
 
-    // /v1/images/edits 呼叫：多圖使用 image[] 欄位；支援背景透明與格式，遇到模型不支援的選用參數會自動移除重送
-    async function callImagesEdit(apiKey, { images, mask, prompt, model, size, quality, background, format }) {
+    // -------------------------------------------------------------
+    // 12.95 API 連線強化層：逾時、自動重試、使用者取消、錯誤訊息中文化、多張結果解析
+    // -------------------------------------------------------------
+    const API_TIMEOUT_MS = 6 * 60 * 1000;            // 高畫質 / 4K 可能超過 2 分鐘，給足 6 分鐘
+    const RETRYABLE_STATUS = new Set([408, 409, 429, 500, 502, 503, 504]);
+    let activeRequestController = null;              // 由 setLoading 建立，供「取消本次請求」使用
+
+    const TRANSPARENCY_GUARD = '\n\n[透明圖層規範]: 必須輸出純 Alpha 透明通道（Alpha=0）。絕對禁止在背景繪製任何灰白相間的棋盤格、網格或偽造透明底紋。背景像素必須完全為空 (Transparent)。';
+
+    // 透明背景時附加防偽棋盤格約束（生圖 / 以圖生圖 / 修圖共用，避免重複附加）
+    function applyTransparencyGuard(prompt, background) {
+      if (background !== 'transparent' || prompt.includes('[透明圖層規範]')) return prompt;
+      return prompt + TRANSPARENCY_GUARD;
+    }
+
+    function makeCancelError() {
+      const e = new Error('已取消本次請求');
+      e.cancelled = true;
+      return e;
+    }
+
+    function sleep(ms, signal) {
+      return new Promise((resolve, reject) => {
+        const t = setTimeout(resolve, ms);
+        if (signal) {
+          signal.addEventListener('abort', () => { clearTimeout(t); reject(makeCancelError()); }, { once: true });
+        }
+      });
+    }
+
+    function friendlyApiError(status, msg, code) {
+      if (status === 401) return 'API Key 無效或已過期，請點右上角重新設定';
+      if (status === 403) return `此 API Key 沒有該模型的使用權限（${msg}）`;
+      if (status === 429) {
+        return /quota|billing|insufficient/i.test(msg)
+          ? 'OpenAI 帳戶額度不足，請至 platform.openai.com 儲值後再試'
+          : '請求過於頻繁（觸發速率限制），請稍候再試';
+      }
+      if (code === 'moderation_blocked' || /safety system|moderation/i.test(msg)) {
+        return `內容被 OpenAI 安全審查擋下，請調整提示詞或素材（${msg}）`;
+      }
+      if (status >= 500) return `OpenAI 伺服器暫時異常 (${status})，請稍後再試`;
+      return msg;
+    }
+
+    // 統一的 OpenAI 請求入口。buildBody 每次重試都會重新呼叫（FormData 不能重複送出）
+    async function openaiFetch(endpoint, apiKey, buildBody, { retries = 2 } = {}) {
+      const outer = activeRequestController;
+      for (let attempt = 0; ; attempt++) {
+        if (outer && outer.signal.aborted) throw makeCancelError();
+        const controller = new AbortController();
+        const onUserAbort = () => controller.abort();
+        if (outer) outer.signal.addEventListener('abort', onUserAbort, { once: true });
+        let timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; controller.abort(); }, API_TIMEOUT_MS);
+
+        const body = buildBody();
+        const isForm = body instanceof FormData;
+        const headers = { 'Authorization': `Bearer ${apiKey}` };
+        if (!isForm) headers['Content-Type'] = 'application/json';
+
+        let response;
+        let data = {};
+        try {
+          response = await fetch(`https://api.openai.com/v1/${endpoint}`, {
+            method: 'POST',
+            headers,
+            body: isForm ? body : JSON.stringify(body),
+            signal: controller.signal
+          });
+          try { data = await response.json(); } catch (_) { /* 非 JSON 回應 */ }
+        } catch (err) {
+          if (outer && outer.signal.aborted) throw makeCancelError();
+          if (timedOut) {
+            const e = new Error(`請求逾時（超過 ${API_TIMEOUT_MS / 60000} 分鐘仍未回應），請降低畫質/尺寸或稍後再試`);
+            e.status = 408;
+            throw e; // 逾時不自動重試，避免重複計費
+          }
+          if (attempt < retries) {
+            showStatus(`🌐 網路連線不穩，${2 * (attempt + 1)} 秒後自動重試 (${attempt + 1}/${retries})...`, 'info');
+            await sleep(2000 * (attempt + 1), outer && outer.signal);
+            continue;
+          }
+          throw new Error('網路連線失敗，請檢查網路後重試');
+        } finally {
+          clearTimeout(timer);
+          if (outer) outer.signal.removeEventListener('abort', onUserAbort);
+        }
+
+        if (response.ok) return data;
+
+        const msg = data.error?.message || `API 錯誤代碼: ${response.status}`;
+        if (RETRYABLE_STATUS.has(response.status) && attempt < retries && !/quota|billing|insufficient/i.test(msg)) {
+          const retryAfter = Number(response.headers.get('retry-after'));
+          const wait = retryAfter > 0 ? Math.min(retryAfter * 1000, 30000) : 1500 * 2 ** attempt;
+          showStatus(`⏳ OpenAI 忙碌中 (${response.status})，${Math.round(wait / 1000)} 秒後自動重試 (${attempt + 1}/${retries})...`, 'info');
+          await sleep(wait, outer && outer.signal);
+          continue;
+        }
+        const err = new Error(friendlyApiError(response.status, msg, data.error?.code));
+        err.status = response.status;
+        err.param = data.error?.param || '';
+        err.rawMessage = msg;
+        throw err;
+      }
+    }
+
+    // 把 API 回傳的 data[] 全部轉成可永久保存的 DataURL（依實際輸出格式標註 MIME）
+    async function extractImages(data, format = 'png') {
+      const list = Array.isArray(data?.data) ? data.data : [];
+      const fmt = data?.output_format || format;
+      const mime = fmt === 'jpeg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png';
+      const urls = await Promise.all(list.map(d =>
+        d.b64_json ? `data:${mime};base64,${d.b64_json}` : (d.url ? ensureDataUrl(d.url) : null)
+      ));
+      return urls.filter(Boolean);
+    }
+
+    function isNParamRejected(err) {
+      return err && err.status === 400 && (err.param === 'n' || /\b'?n'?\b.*(support|invalid|must)/i.test(err.rawMessage || ''));
+    }
+
+    // 依張數送出：先嘗試單次 n 張；若模型不接受 n 或回傳張數不足，改以多個 n=1 請求平行補齊
+    async function requestImagesWithCount(count, sendOnce, format) {
+      let images = [];
+      try {
+        images = await extractImages(await sendOnce(count), format);
+      } catch (err) {
+        if (err.cancelled || count === 1 || !isNParamRejected(err)) throw err;
+        console.warn('模型不接受 n > 1，改用平行單張請求：', err.rawMessage);
+      }
+      const missing = count - images.length;
+      if (missing > 0) {
+        if (images.length > 0) showStatus(`已取得 ${images.length} 張，正在補齊其餘 ${missing} 張...`, 'info');
+        const settled = await Promise.allSettled(
+          Array.from({ length: missing }, () => sendOnce(1).then(d => extractImages(d, format)))
+        );
+        settled.forEach(s => { if (s.status === 'fulfilled') images.push(...s.value); });
+        if (images.length === 0) {
+          const rejected = settled.find(s => s.status === 'rejected');
+          throw rejected ? rejected.reason : new Error('API 未回傳圖片資料');
+        }
+        if (activeRequestController && activeRequestController.signal.aborted && images.length < count) {
+          showStatus(`已取消，保留已完成的 ${images.length} 張`, 'info');
+        }
+      }
+      return images.slice(0, count);
+    }
+
+    // /v1/images/edits 呼叫：多圖使用 image[] 欄位；支援背景透明、格式與 n 張；遇到模型不支援的選用參數會自動移除重送
+    async function callImagesEdit(apiKey, { images, mask, prompt, model, size, quality, background, format, n = 1 }) {
       const selectedBg = background || (selectBackground ? selectBackground.value : 'opaque');
       const selectedFmt = format || (selectFormat ? selectFormat.value : 'png');
       const safeFmt = (selectedBg === 'transparent' && selectedFmt === 'jpeg') ? 'png' : selectedFmt;
-
-      // 若要求透明背景，強制在 Prompt 加入防止假棋盤格的約束指令，杜絕 AI 畫出灰白格子
-      let finalPrompt = prompt;
-      if (selectedBg === 'transparent' && !finalPrompt.includes('[透明圖層規範]')) {
-        finalPrompt += '\n\n[透明圖層規範]: 必須輸出純 Alpha 透明通道（Alpha=0）。絕對禁止在背景繪製任何灰白相間的棋盤格、網格或偽造透明底紋。背景像素必須完全為空 (Transparent)。';
-      }
+      const finalPrompt = applyTransparencyGuard(prompt, selectedBg);
 
       const optional = {
         quality: normalizeQuality(model, quality),
@@ -3015,60 +3280,54 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         output_format: safeFmt,
         background: selectedBg
       };
-      for (let attempt = 0; attempt < 4; attempt++) {
-        const fd = new FormData();
-        if (images.length === 1) {
-          fd.append('image', images[0], 'image.png');
-        } else {
-          images.forEach((b, i) => fd.append('image[]', b, `image_${i + 1}.png`));
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          return await openaiFetch('images/edits', apiKey, () => {
+            const fd = new FormData();
+            if (images.length === 1) {
+              fd.append('image', images[0], 'image.png');
+            } else {
+              images.forEach((b, i) => fd.append('image[]', b, `image_${i + 1}.png`));
+            }
+            if (mask) fd.append('mask', mask, 'mask.png');
+            fd.append('prompt', finalPrompt);
+            fd.append('model', model);
+            fd.append('n', String(n));
+            fd.append('size', size);
+            Object.entries(optional).forEach(([k, v]) => {
+              if (v && !unsupportedEditParams.has(`${model}:${k}`)) fd.append(k, v);
+            });
+            return fd;
+          });
+        } catch (err) {
+          if (err.cancelled || err.status !== 400) throw err;
+          const msg = err.rawMessage || err.message;
+          const param = err.param || '';
+          const rejected = Object.keys(optional).find(k =>
+            optional[k] && !unsupportedEditParams.has(`${model}:${k}`) && (param === k || msg.includes(k)));
+          if (rejected) {
+            console.warn(`模型 ${model} 不接受參數 ${rejected}，自動移除後重送：`, msg);
+            unsupportedEditParams.add(`${model}:${rejected}`);
+            continue;
+          }
+          if (!mask && (param === 'mask' || /mask|遮罩/i.test(msg))) {
+            console.warn('API/代理提示缺少 mask，自動生成全透明遮罩重送：', msg);
+            const [w, h] = size.split('x').map(Number);
+            const tc = document.createElement('canvas');
+            tc.width = w; tc.height = h;
+            mask = await canvasToBlob(tc);
+            continue;
+          }
+          throw err;
         }
-        if (mask) fd.append('mask', mask, 'mask.png');
-        fd.append('prompt', finalPrompt);
-        fd.append('model', model);
-        fd.append('n', '1');
-        fd.append('size', size);
-        Object.entries(optional).forEach(([k, v]) => {
-          if (v && !unsupportedEditParams.has(`${model}:${k}`)) fd.append(k, v);
-        });
-
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${apiKey}` },
-          body: fd
-        });
-        let data = {};
-        try { data = await response.json(); } catch (_) { /* 非 JSON 回應 */ }
-        if (response.ok) return data;
-
-        const msg = data.error?.message || `API 錯誤代碼: ${response.status}`;
-        const param = data.error?.param || '';
-        const rejected = Object.keys(optional).find(k =>
-          optional[k] && !unsupportedEditParams.has(`${model}:${k}`) && (param === k || msg.includes(k)));
-        if (response.status === 400 && rejected) {
-          console.warn(`模型 ${model} 不接受參數 ${rejected}，自動移除後重送：`, msg);
-          unsupportedEditParams.add(`${model}:${rejected}`);
-          continue;
-        }
-        if (response.status === 400 && !mask && (param === 'mask' || /mask|遮罩/i.test(msg))) {
-          console.warn('API/代理提示缺少 mask，自動生成全透明遮罩重送：', msg);
-          const [w, h] = size.split('x').map(Number);
-          const tc = document.createElement('canvas');
-          tc.width = w; tc.height = h;
-          mask = await canvasToBlob(tc);
-          continue;
-        }
-        const err = new Error(msg);
-        err.status = response.status;
-        err.param = param;
-        throw err;
       }
       throw new Error('API 參數相容性重試次數已達上限');
     }
 
     async function resultToDataUrl(data) {
-      const d = data?.data?.[0];
-      if (!d) throw new Error('API 未回傳圖片資料');
-      return ensureDataUrl(d.b64_json ? `data:image/png;base64,${d.b64_json}` : d.url);
+      const [first] = await extractImages(data);
+      if (!first) throw new Error('API 未回傳圖片資料');
+      return first;
     }
 
     // GPT Image 的遮罩只是「提示」，模型實際上會整張重算。這裡把紅框外區域用原圖像素貼回（邊緣柔化），確保框外絕不變動
@@ -3172,9 +3431,97 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       }
     }
 
-    // 13.1 純文字生圖
+    // -------------------------------------------------------------
+    // 13.0 本次多張生成結果挑選托盤 (Results Picker Tray)
+    // -------------------------------------------------------------
+    let currentBatchResults = [];
+    let currentBatchMeta = null;
+
+    function renderResultsTray(imageUrls, meta) {
+      if (!resultsTray || !resultsTrayGrid) return;
+      currentBatchResults = imageUrls || [];
+      currentBatchMeta = meta || {};
+
+      if (currentBatchResults.length <= 1) {
+        resultsTray.classList.add('hidden');
+        return;
+      }
+
+      resultsTray.classList.remove('hidden');
+      if (resultsTrayCount) resultsTrayCount.innerText = currentBatchResults.length;
+      resultsTrayGrid.innerHTML = '';
+
+      currentBatchResults.forEach((url, index) => {
+        const card = document.createElement('div');
+        const isActive = index === 0;
+        card.className = `result-thumb-card relative group border rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 cursor-pointer transition-all ${isActive ? 'ring-2 ring-emerald-500 border-emerald-500 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-emerald-400'}`;
+        card.dataset.index = index;
+
+        card.innerHTML = `
+          <img src="${url}" class="w-full aspect-square object-cover" alt="候選圖 #${index + 1}">
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+            <span class="text-white text-[11px] font-bold bg-black/75 px-2 py-0.5 rounded shadow">載入畫布</span>
+          </div>
+          <div class="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow">#${index + 1}</div>
+          <button type="button" class="btn-single-download absolute top-1 right-1 bg-black/70 hover:bg-emerald-600 text-white p-1 rounded transition-colors shadow" title="下載此張圖片">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+
+        // 點擊縮圖切換畫布
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-single-download')) return;
+          resultsTrayGrid.querySelectorAll('.result-thumb-card').forEach(c => {
+            c.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500', 'shadow-sm');
+            c.classList.add('border-slate-200', 'dark:border-slate-800');
+          });
+          card.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500', 'shadow-sm');
+          card.classList.remove('border-slate-200', 'dark:border-slate-800');
+
+          loadImageToCanvas(url, meta.w || originalNativeW, meta.h || originalNativeH, meta.prompt || currentCanvasPrompt);
+          showStatus(`✨ 已將候選圖 #${index + 1} 載入畫布`, 'info');
+        });
+
+        // 個別下載按鈕
+        const btnDl = card.querySelector('.btn-single-download');
+        if (btnDl) {
+          btnDl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const promptName = (meta.prompt || 'meme').slice(0, 30);
+            triggerAutoDownload(url, `${promptName}_${index + 1}`);
+          });
+        }
+
+        resultsTrayGrid.appendChild(card);
+      });
+
+      lucide.createIcons();
+      resultsTray.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    if (btnDownloadAllResults) {
+      btnDownloadAllResults.addEventListener('click', () => {
+        if (!currentBatchResults.length) return;
+        showStatus(`正在下載全部 ${currentBatchResults.length} 張圖片...`, 'info');
+        currentBatchResults.forEach((url, i) => {
+          setTimeout(() => {
+            const promptName = (currentBatchMeta?.prompt || 'meme').slice(0, 30);
+            triggerAutoDownload(url, `${promptName}_${i + 1}`);
+          }, i * 350);
+        });
+      });
+    }
+
+    if (btnCloseResultsTray) {
+      btnCloseResultsTray.addEventListener('click', () => {
+        resultsTray.classList.add('hidden');
+      });
+    }
+
+    // 13.1 純文字生圖 (支援 1~4 張批量與 auto 智能張數)
     async function executeGeneration(apiKey, prompt) {
-      setLoading(true, '正在呼叫 OpenAI GPT Image 2.5 生成中...');
+      const count = getEffectiveCount();
+      setLoading(true, `正在呼叫 OpenAI GPT Image 2.5 生成 ${count > 1 ? `(${count} 張)...` : '中...'}`);
       try {
         const model = selectModel.value;
         const size = getValidOpenAISize(selectResolution.value);
@@ -3182,66 +3529,64 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const background = selectBackground.value;
         const format = selectFormat.value;
 
-        const payload = {
+        const finalPrompt = applyTransparencyGuard(prompt, background);
+        const safeFmt = (background === 'transparent' && format === 'jpeg') ? 'png' : format;
+
+        const payloadBase = {
           model: model,
-          prompt: prompt,
-          n: 1,
+          prompt: finalPrompt,
           size: size,
-          output_format: format
+          output_format: safeFmt
         };
 
         if (model.startsWith('gpt-image')) {
           const q = normalizeQuality(model, quality);
-          if (q) payload.quality = q;
-          payload.background = background;
-          // 修正：透明背景不能搭配 JPEG，自動改 PNG
-          if (background === 'transparent' && payload.output_format === 'jpeg') payload.output_format = 'png';
-          // 強制防止 AI 畫出假棋盤格
-          if (background === 'transparent' && !payload.prompt.includes('[透明圖層規範]')) {
-            payload.prompt += '\n\n[透明圖層規範]: 必須輸出純 Alpha 透明通道（Alpha=0）。絕對禁止在背景繪製任何灰白相間的棋盤格、網格或偽造透明底紋。背景像素必須完全為空 (Transparent)。';
-          }
+          if (q) payloadBase.quality = q;
+          payloadBase.background = background;
         }
 
-        const response = await fetch('https://api.openai.com/v1/images/generations', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(payload)
-        });
+        const sendOnce = async (n) => {
+          return openaiFetch('images/generations', apiKey, () => ({
+            ...payloadBase,
+            n
+          }));
+        };
 
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error?.message || `API 錯誤代碼: ${response.status}`);
-        }
+        const imageUrls = await requestImagesWithCount(count, sendOnce, safeFmt);
+        if (!imageUrls.length) throw new Error('API 未回傳任何圖片');
 
-        const imgData = data.data[0];
-        let rawUrl = '';
-        if (imgData.b64_json) {
-          rawUrl = `data:image/${payload.output_format};base64,${imgData.b64_json}`;
-        } else if (imgData.url) {
-          rawUrl = imgData.url;
-        }
-
-        const permanentDataUrl = await ensureDataUrl(rawUrl);
         const [w, h] = size.split('x').map(Number);
         currentCanvasPrompt = prompt;
         baseDesignPrompt = prompt;
         editHistory = [];
-        loadImageToCanvas(permanentDataUrl, w, h, prompt);
 
-        await saveImageToDB(permanentDataUrl, prompt, model, size, { basePrompt: prompt, edits: [] });
+        // 預設將第 1 張載入畫布
+        loadImageToCanvas(imageUrls[0], w, h, prompt);
+
+        // 批次存入本機 IndexedDB 資料庫（保留所有候選結果）
+        for (let i = 0; i < imageUrls.length; i++) {
+          const title = imageUrls.length > 1 ? `${prompt} (${i + 1}/${imageUrls.length})` : prompt;
+          await saveImageToDB(imageUrls[i], title, model, size, { basePrompt: prompt, edits: [], batchIndex: i });
+        }
         refreshGalleryFromDB();
 
+        // 若有多張，展開挑選托盤供比對切換
+        renderResultsTray(imageUrls, { w, h, prompt, model, size });
+
         if (chkAutoDownload.checked) {
-          triggerAutoDownload(permanentDataUrl, prompt);
+          imageUrls.forEach((url, i) => {
+            setTimeout(() => triggerAutoDownload(url, `${prompt.slice(0, 30)}_${i + 1}`), i * 350);
+          });
         }
 
-        showStatus('🎉 圖片生成成功！已永久保存至本機資料庫', 'success');
+        showStatus(`🎉 ${imageUrls.length} 張圖片生成成功！已存入本機資料庫`, 'success');
       } catch (err) {
-        console.error('生圖失敗:', err);
-        showStatus(`❌ 生成失敗：${err.message}`, 'error');
+        if (err.cancelled) {
+          showStatus('⏹️ 已取消生成', 'info');
+        } else {
+          console.error('生圖失敗:', err);
+          showStatus(`❌ 生成失敗：${err.message}`, 'error');
+        }
       } finally {
         setLoading(false);
       }
@@ -3253,7 +3598,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         showStatus('尚未上傳任何參考素材！', 'error');
         return;
       }
-      setLoading(true, `正在依據 ${referenceImages.length} 張素材以圖生圖中...`);
+      const count = getEffectiveCount();
+      setLoading(true, `正在依據 ${referenceImages.length} 張素材以圖生圖 ${count > 1 ? `(${count} 張)...` : '中...'}`);
       try {
         const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-flare';
         const size = getValidOpenAISize(selectResolution.value);
@@ -3263,48 +3609,62 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const background = selectBackground ? selectBackground.value : 'opaque';
         const format = selectFormat ? selectFormat.value : 'png';
 
-        const sendComposite = async () => {
+        const sendComposite = async (n) => {
           const blob = await createCompositeReferenceBlob(referenceImages, targetW, targetH);
           if (!blob) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
-          return callImagesEdit(apiKey, { images: [blob], prompt, model, size, quality, background, format });
+          return callImagesEdit(apiKey, { images: [blob], prompt, model, size, quality, background, format, n });
         };
 
-        let data;
-        if (sendMode === 'composite' && referenceImages.length > 1) {
-          data = await sendComposite();
-        } else {
-          const blobs = (await Promise.all(referenceImages.map(r => getPreparedBlobFromDataUrl(r.dataUrl)))).filter(Boolean);
-          if (blobs.length === 0) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
-          try {
-            // 修正：多圖必須用 image[] 欄位，支援 background 透明與 format
-            data = await callImagesEdit(apiKey, { images: blobs, prompt, model, size, quality, background, format });
-          } catch (err) {
-            // 只有「圖片格式/數量」類錯誤才降級；額度、權限、內容審查錯誤直接回報，不重複扣費
-            if (blobs.length > 1 && err.status === 400 && /image/i.test(`${err.param} ${err.message}`)) {
-              showStatus('原生多圖未被接受，改以並排合拼圖重新送出...', 'info');
-              data = await sendComposite();
-            } else {
-              throw err;
-            }
-          }
-        }
+        const blobs = (await Promise.all(referenceImages.map(r => getPreparedBlobFromDataUrl(r.dataUrl)))).filter(Boolean);
+        if (blobs.length === 0) throw new Error('素材圖片轉碼失敗，請確認檔案有效');
 
-        const permanentDataUrl = await resultToDataUrl(data);
+        const sendOnce = async (n) => {
+          if (sendMode === 'composite' && referenceImages.length > 1) {
+            return sendComposite(n);
+          }
+          try {
+            return await callImagesEdit(apiKey, { images: blobs, prompt, model, size, quality, background, format, n });
+          } catch (err) {
+            if (blobs.length > 1 && err.status === 400 && /image/i.test(`${err.param} ${err.rawMessage || err.message}`)) {
+              showStatus('原生多圖未被接受，改以並排合拼圖重新送出...', 'info');
+              return sendComposite(n);
+            }
+            throw err;
+          }
+        };
+
+        const safeFmt = (background === 'transparent' && format === 'jpeg') ? 'png' : format;
+        const imageUrls = await requestImagesWithCount(count, sendOnce, safeFmt);
+        if (!imageUrls.length) throw new Error('API 未回傳任何圖片');
+
         currentCanvasPrompt = prompt;
         baseDesignPrompt = prompt;
         editHistory = [];
-        loadImageToCanvas(permanentDataUrl, targetW, targetH, prompt);
-        await saveImageToDB(permanentDataUrl, `[多圖以圖生圖 ×${referenceImages.length}] ` + prompt, model, size, { basePrompt: prompt, edits: [] });
+
+        loadImageToCanvas(imageUrls[0], targetW, targetH, prompt);
+
+        for (let i = 0; i < imageUrls.length; i++) {
+          const title = `[多圖以圖生圖 ×${referenceImages.length}] ${prompt}` + (imageUrls.length > 1 ? ` (${i + 1}/${imageUrls.length})` : '');
+          await saveImageToDB(imageUrls[i], title, model, size, { basePrompt: prompt, edits: [], batchIndex: i });
+        }
         refreshGalleryFromDB();
 
+        renderResultsTray(imageUrls, { w: targetW, h: targetH, prompt, model, size });
+
         if (chkAutoDownload.checked) {
-          triggerAutoDownload(permanentDataUrl, prompt);
+          imageUrls.forEach((url, i) => {
+            setTimeout(() => triggerAutoDownload(url, `${prompt.slice(0, 30)}_${i + 1}`), i * 350);
+          });
         }
 
-        showStatus(`✨ 以圖生圖成功！已融合 ${referenceImages.length} 張素材`, 'success');
+        showStatus(`✨ 以圖生圖成功！已融合 ${referenceImages.length} 張素材生成 ${imageUrls.length} 張圖片`, 'success');
       } catch (err) {
-        console.error('以圖生圖失敗:', err);
-        showStatus(`❌ 以圖生圖失敗：${err.message}`, 'error');
+        if (err.cancelled) {
+          showStatus('⏹️ 已取消以圖生圖', 'info');
+        } else {
+          console.error('以圖生圖失敗:', err);
+          showStatus(`❌ 以圖生圖失敗：${err.message}`, 'error');
+        }
       } finally {
         setLoading(false);
       }
@@ -3644,11 +4004,28 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     function setLoading(isLoading, message = '') {
       btnExecute.disabled = isLoading;
+      if (btnExecuteQuickRefine) btnExecuteQuickRefine.disabled = isLoading;
+
       if (isLoading) {
+        if (!activeRequestController || activeRequestController.signal.aborted) {
+          activeRequestController = new AbortController();
+        }
+        if (btnCancelRequest) btnCancelRequest.classList.remove('hidden');
         btnExecuteText.innerText = message || '處理中...';
       } else {
+        activeRequestController = null;
+        if (btnCancelRequest) btnCancelRequest.classList.add('hidden');
         updateExecuteButtonText();
       }
+    }
+
+    if (btnCancelRequest) {
+      btnCancelRequest.addEventListener('click', () => {
+        if (activeRequestController) {
+          activeRequestController.abort();
+          showStatus('⏹️ 已發出取消請求，正在中止連線...', 'info');
+        }
+      });
     }
 
     function showStatus(message, type = 'info') {
@@ -3679,6 +4056,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     // -------------------------------------------------------------
     initCanvas(864, 1536);
     updateKeyStatusUI();
+    updateCountUI();
     refreshGalleryFromDB();
   </script>
 </body>
