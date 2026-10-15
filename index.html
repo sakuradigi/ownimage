@@ -177,6 +177,7 @@
           <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">圖片尺寸 / 比例</label>
             <select id="selectResolution" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="auto">🤖 自動 (依 Prompt 由 AI 判斷比例)</option>
               <option value="1920x1088">16:9 FHD 高清 (1920x1080 / 1088)</option>
               <option value="1536x864">16:9 橫圖 (1536x864) 快速簡報</option>
               <option value="3840x2160">16:9 4K 旗艦 (3840x2160)</option>
@@ -3053,6 +3054,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     }
 
     function getValidOpenAISize(sizeStr) {
+      if (sizeStr === 'auto') return 'auto';
       if (!sizeStr) return '1024x1024';
       const [w, h] = sizeStr.split('x').map(Number);
       const [W, H] = fitApiSize(w, h);
@@ -3555,7 +3557,8 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         const imageUrls = await requestImagesWithCount(count, sendOnce, safeFmt);
         if (!imageUrls.length) throw new Error('API 未回傳任何圖片');
 
-        const [w, h] = size.split('x').map(Number);
+        const firstImg = await loadImageEl(imageUrls[0]);
+        const w = firstImg.naturalWidth, h = firstImg.naturalHeight;
         currentCanvasPrompt = prompt;
         baseDesignPrompt = prompt;
         editHistory = [];
@@ -3603,7 +3606,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       try {
         const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-flare';
         const size = getValidOpenAISize(selectResolution.value);
-        const [targetW, targetH] = size.split('x').map(Number);
+        const [targetW, targetH] = size === 'auto' ? [1024, 1024] : size.split('x').map(Number);
         const sendMode = document.querySelector('input[name="refSendMode"]:checked')?.value || 'multi';
         const quality = selectQuality.value;
         const background = selectBackground ? selectBackground.value : 'opaque';
@@ -3641,7 +3644,9 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         baseDesignPrompt = prompt;
         editHistory = [];
 
-        loadImageToCanvas(imageUrls[0], targetW, targetH, prompt);
+        const firstImg = await loadImageEl(imageUrls[0]);
+        const outW = firstImg.naturalWidth || targetW, outH = firstImg.naturalHeight || targetH;
+        loadImageToCanvas(imageUrls[0], outW, outH, prompt);
 
         for (let i = 0; i < imageUrls.length; i++) {
           const title = `[多圖以圖生圖 ×${referenceImages.length}] ${prompt}` + (imageUrls.length > 1 ? ` (${i + 1}/${imageUrls.length})` : '');
@@ -3649,7 +3654,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         }
         refreshGalleryFromDB();
 
-        renderResultsTray(imageUrls, { w: targetW, h: targetH, prompt, model, size });
+        renderResultsTray(imageUrls, { w: outW, h: outH, prompt, model, size });
 
         if (chkAutoDownload.checked) {
           imageUrls.forEach((url, i) => {
