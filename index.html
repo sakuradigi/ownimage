@@ -243,7 +243,12 @@
             <label id="promptLabel" class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
               <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)
             </label>
-            <button id="btnClearPrompt" class="text-xs text-slate-400 hover:text-rose-500 transition-colors">清空</button>
+            <div class="flex items-center gap-3">
+              <button type="button" id="btnHistoryMain" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1" title="查看／還原過去用過的提示詞">
+                <i data-lucide="history" class="w-3.5 h-3.5"></i> 歷史
+              </button>
+              <button id="btnClearPrompt" class="text-xs text-slate-400 hover:text-rose-500 transition-colors">清空</button>
+            </div>
           </div>
 
           <textarea id="inputPrompt" rows="5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors custom-scrollbar resize-none" placeholder="描述您想生成的圖卡、早安圖或主體場景...（例如：早安圖，質感、綠意、舒適、溫馨晨光，細膩光影）"></textarea>
@@ -764,6 +769,9 @@
             </span>
           </div>
           <div class="flex items-center gap-2">
+            <button type="button" id="btnHistoryRefine" class="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer" title="查看／還原過去的修改指令">
+              <i data-lucide="history" class="w-3.5 h-3.5"></i> 歷史
+            </button>
             <button type="button" id="btnClearQuickMask" class="hidden text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium underline flex items-center gap-1 cursor-pointer">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清除紅框遮罩
             </button>
@@ -3874,6 +3882,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         btnExecuteQuickRefine.disabled = true;
         btnQuickRefineText.innerText = '修正中...';
       }
+      if (typeof recordPrompt === 'function') recordPrompt('refine', refinePrompt, '送出');
       try {
         const ok = await runImageEdit(apiKey, refinePrompt);
         if (ok && inputQuickRefine && inputQuickRefine.value.trim() === refinePrompt.trim()) {
@@ -4091,6 +4100,144 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         statusAlert.classList.add('hidden');
       }, 7000);
     }
+
+    // -------------------------------------------------------------
+    // 14.5 提示詞歷史紀錄（主提示詞 ＋ 右側補充修正指令），可回溯還原
+    // -------------------------------------------------------------
+    const PROMPT_HISTORY_KEY = 'ownimage_prompt_history_v1';
+    const PROMPT_HISTORY_MAX = 150;
+    const PROMPT_SOURCES = {
+      main: { label: '生圖/主提示詞', input: () => inputPrompt, badge: 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' },
+      refine: { label: '修改指令', input: () => inputQuickRefine, badge: 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' }
+    };
+
+    function loadPromptHistory() {
+      try { return JSON.parse(localStorage.getItem(PROMPT_HISTORY_KEY)) || []; } catch (_) { return []; }
+    }
+    function savePromptHistory(list) {
+      try { localStorage.setItem(PROMPT_HISTORY_KEY, JSON.stringify(list.slice(0, PROMPT_HISTORY_MAX))); } catch (_) { /* 容量滿了就略過 */ }
+    }
+
+    // reason：送出 / 清空前 / 離開輸入框 — 相同內容只保留最新一筆（並上移到最前面）
+    function recordPrompt(source, text, reason = '') {
+      text = (text || '').trim();
+      if (!text || text.length < 2) return;
+      let list = loadPromptHistory().filter(e => !(e.source === source && e.text === text));
+      list.unshift({ id: Date.now() + Math.random().toString(36).slice(2, 6), source, text, reason, ts: Date.now() });
+      savePromptHistory(list);
+    }
+
+    let promptHistoryFilter = 'main';
+    let promptHistoryModal = null;
+
+    function formatPromptTime(ts) {
+      const d = new Date(ts);
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function ensurePromptHistoryModal() {
+      if (promptHistoryModal) return promptHistoryModal;
+      const el = document.createElement('div');
+      el.className = 'hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
+      el.innerHTML = `
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-emerald-500"></i> 提示詞歷史紀錄</span>
+            <div class="flex items-center gap-3">
+              <button type="button" data-act="clear-all" class="text-xs text-slate-400 hover:text-rose-500">清除此分類</button>
+              <button type="button" data-act="close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+          </div>
+          <div class="flex gap-2 px-4 pt-3" data-role="tabs"></div>
+          <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-2" data-role="list"></div>
+          <div class="px-4 pb-3 text-[11px] text-slate-400">每次「送出」、「清空 / 清除重來」前與離開輸入框時自動保存，最多 ${PROMPT_HISTORY_MAX} 筆，僅存在本機瀏覽器。</div>
+        </div>`;
+      document.body.appendChild(el);
+      el.addEventListener('click', (e) => {
+        if (e.target === el || e.target.closest('[data-act="close"]')) { el.classList.add('hidden'); return; }
+        if (e.target.closest('[data-act="clear-all"]')) {
+          if (!confirm(`確定清除「${PROMPT_SOURCES[promptHistoryFilter].label}」的所有歷史紀錄？`)) return;
+          savePromptHistory(loadPromptHistory().filter(x => x.source !== promptHistoryFilter));
+          renderPromptHistory();
+          return;
+        }
+        const tab = e.target.closest('[data-tab]');
+        if (tab) { promptHistoryFilter = tab.dataset.tab; renderPromptHistory(); return; }
+        const row = e.target.closest('[data-id]');
+        if (!row) return;
+        const entry = loadPromptHistory().find(x => x.id === row.dataset.id);
+        if (!entry) return;
+        if (e.target.closest('[data-act="delete"]')) {
+          savePromptHistory(loadPromptHistory().filter(x => x.id !== entry.id));
+          renderPromptHistory();
+        } else if (e.target.closest('[data-act="append"]') || e.target.closest('[data-act="restore"]')) {
+          const input = PROMPT_SOURCES[entry.source].input();
+          const append = !!e.target.closest('[data-act="append"]');
+          // 還原前先把目前內容存起來，避免被覆蓋後又找不回來
+          recordPrompt(entry.source, input.value, '還原前');
+          input.value = append && input.value.trim() ? input.value.trim() + '\n' + entry.text : entry.text;
+          input.dispatchEvent(new Event('input'));
+          if (entry.source === 'refine') autoResizeQuickRefine();
+          el.classList.add('hidden');
+          input.focus();
+          showStatus(append ? '已附加到輸入框' : '已還原提示詞', 'success');
+        }
+      });
+      promptHistoryModal = el;
+      return el;
+    }
+
+    function renderPromptHistory() {
+      const el = ensurePromptHistoryModal();
+      const all = loadPromptHistory();
+      el.querySelector('[data-role="tabs"]').innerHTML = Object.entries(PROMPT_SOURCES).map(([k, v]) => {
+        const n = all.filter(x => x.source === k).length;
+        const active = k === promptHistoryFilter;
+        return `<button type="button" data-tab="${k}" class="px-3 py-1 rounded-lg text-xs font-bold ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${v.label} (${n})</button>`;
+      }).join('');
+      const items = all.filter(x => x.source === promptHistoryFilter);
+      const listEl = el.querySelector('[data-role="list"]');
+      listEl.innerHTML = items.length ? items.map(x => `
+        <div data-id="${x.id}" class="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50 dark:bg-slate-950">
+          <div class="flex items-center justify-between mb-1.5 text-[11px] text-slate-400">
+            <span>${formatPromptTime(x.ts)}${x.reason ? ` ‧ ${escapeHtml(x.reason)}` : ''} ‧ ${x.text.length} 字</span>
+            <span class="flex items-center gap-3">
+              <button type="button" data-act="append" class="text-slate-500 hover:text-emerald-600">附加</button>
+              <button type="button" data-act="restore" class="text-emerald-600 font-bold hover:underline">還原</button>
+              <button type="button" data-act="delete" class="text-slate-400 hover:text-rose-500">刪除</button>
+            </span>
+          </div>
+          <div class="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-wrap break-words max-h-28 overflow-y-auto custom-scrollbar">${escapeHtml(x.text)}</div>
+        </div>`).join('') : '<div class="text-center text-sm text-slate-400 py-8">還沒有紀錄</div>';
+      lucide.createIcons();
+    }
+
+    function openPromptHistory(source) {
+      promptHistoryFilter = source;
+      renderPromptHistory();
+      ensurePromptHistoryModal().classList.remove('hidden');
+    }
+
+    document.getElementById('btnHistoryMain').addEventListener('click', () => openPromptHistory('main'));
+    document.getElementById('btnHistoryRefine').addEventListener('click', () => openPromptHistory('refine'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && promptHistoryModal && !promptHistoryModal.classList.contains('hidden')) promptHistoryModal.classList.add('hidden');
+    });
+
+    // 自動記錄：送出主提示詞、清空/清除重來之前、離開輸入框
+    btnExecute.addEventListener('click', () => recordPrompt('main', inputPrompt.value, '送出'), true);
+    document.getElementById('btnClearPrompt').addEventListener('click', () => recordPrompt('main', inputPrompt.value, '清空前'), true);
+    document.getElementById('btnResetAll').addEventListener('click', () => {
+      recordPrompt('main', inputPrompt.value, '清除重來前');
+      if (inputQuickRefine) recordPrompt('refine', inputQuickRefine.value, '清除重來前');
+    }, true);
+    inputPrompt.addEventListener('blur', () => recordPrompt('main', inputPrompt.value, '離開輸入框'));
+    if (inputQuickRefine) inputQuickRefine.addEventListener('blur', () => recordPrompt('refine', inputQuickRefine.value, '離開輸入框'));
 
     // -------------------------------------------------------------
     // 15. 應用程式啟動初始化
