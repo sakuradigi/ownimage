@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenAI GPT Image 2.5 官方高質感施政圖卡生成腳本
+OpenAI GPT Image 2.6 官方高質感施政圖卡生成腳本
 使用方式：
   python3 generate_with_openai.py --topic "從賽馬場到晶圓廠" --count 2
 """
@@ -32,7 +32,7 @@ if not api_key:
 
 client = openai.OpenAI(api_key=api_key)
 
-def generate_slide(topic, subtitle, main_title, bullets, ratio="16:9", model="gpt-image-2.5-flare", count=1):
+def generate_slide(topic, subtitle, main_title, bullets, ratio="16:9", model="gpt-image-2.6-flare", count=1):
     date_str = datetime.datetime.now().strftime("%Y%m%d")
 
     color_desc = "modern emerald green and deep forest green (#059669 to #064E3B to #0B2E24)"
@@ -87,12 +87,12 @@ def generate_slide(topic, subtitle, main_title, bullets, ratio="16:9", model="gp
         return []
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="OpenAI GPT Image 2.5 施政圖卡產生器")
+    parser = argparse.ArgumentParser(description="OpenAI GPT Image 2.6 施政圖卡產生器")
     parser.add_argument("--topic", default="從賽馬場到晶圓廠", help="主題名稱")
     parser.add_argument("--subtitle", default="選對人 走對路 ｜ 高雄六年大改變 01 ‧ 產業轉型", help="副標題")
     parser.add_argument("--main_title", default="從賽馬場 到晶圓廠", help="主標題")
     parser.add_argument("--ratio", default="16:9", help="輸出比例 (16:9 或 1:1)")
-    parser.add_argument("--model", default="gpt-image-2.5-flare", choices=["gpt-image-2.5-flare", "gpt-image-2.5-sunburst"], help="OpenAI 模型")
+    parser.add_argument("--model", default="gpt-image-2.6-flare", choices=["gpt-image-2.6-flare", "gpt-image-2.6-sunburst"], help="OpenAI 模型")
     parser.add_argument("--count", type=int, default=1, choices=[1, 2, 3, 4], help="生成張數 (1~4)")
     args = parser.parse_args()
 

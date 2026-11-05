@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 官方高階施政報告圖卡 ＆ 政治文宣事實澄清 - 雙模式 GUI 獨立產生器
-已串接 OpenAI 最新旗艦繪圖模型：gpt-image-2.5-flare
+已串接 OpenAI 最新旗艦繪圖模型：gpt-image-2.6-flare
 執行方式：python3 run_gui.py
 """
 
@@ -41,7 +41,7 @@ HTML_CONTENT = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>官方高階施政圖卡 & 政治文宣產生器 (OpenAI gpt-image-2.5-flare 驅動)</title>
+  <title>官方高階施政圖卡 & 政治文宣產生器 (OpenAI gpt-image-2.6-flare 驅動)</title>
   <style>
     :root {
       --primary: #059669;
@@ -78,7 +78,7 @@ HTML_CONTENT = """<!DOCTYPE html>
   <div class="container">
     <div class="header-bar">
       <h1>🏛️ 高質感施政圖卡 & 政治文宣產生器</h1>
-      <span class="engine-badge">⚡ Powered by OpenAI gpt-image-2.5-flare</span>
+      <span class="engine-badge">⚡ Powered by OpenAI gpt-image-2.6-flare</span>
     </div>
 
     <!-- 模式切換 Tabs -->
@@ -197,7 +197,7 @@ HTML_CONTENT = """<!DOCTYPE html>
       </div>
     </div>
 
-    <button id="btnGenerate" class="submit-btn">🚀 一鍵調用 OpenAI gpt-image-2.5-flare 生成圖卡</button>
+    <button id="btnGenerate" class="submit-btn">🚀 一鍵調用 OpenAI gpt-image-2.6-flare 生成圖卡</button>
 
     <div id="statusBox" class="status"></div>
     <div id="previewBox" class="preview-box"></div>
@@ -245,7 +245,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         policySec.style.display = 'block';
         memeSec.style.display = 'none';
         btn.style.background = '#059669';
-        btn.innerHTML = '🚀 一鍵調用 OpenAI gpt-image-2.5-flare 生成施政圖卡';
+        btn.innerHTML = '🚀 一鍵調用 OpenAI gpt-image-2.6-flare 生成施政圖卡';
       } else {
         tabPolicy.className = 'tab-btn';
         tabMeme.className = 'tab-btn active meme-mode';
@@ -283,7 +283,7 @@ HTML_CONTENT = """<!DOCTYPE html>
       }
 
       statusBox.className = 'status loading';
-      statusBox.innerHTML = '⏳ 正在向 OpenAI gpt-image-2.5-flare 旗艦模型發送生成請求，請稍候約 10-18 秒...';
+      statusBox.innerHTML = '⏳ 正在向 OpenAI gpt-image-2.6-flare 旗艦模型發送生成請求，請稍候約 10-18 秒...';
       previewBox.innerHTML = '';
 
       try {
@@ -296,7 +296,7 @@ HTML_CONTENT = """<!DOCTYPE html>
         
         if (data.success) {
           statusBox.className = 'status success';
-          statusBox.innerHTML = `✅ 成功透過 OpenAI gpt-image-2.5-flare 生成圖卡！<br>檔案已自動存入：<b>output/${data.filename}</b>`;
+          statusBox.innerHTML = `✅ 成功透過 OpenAI gpt-image-2.6-flare 生成圖卡！<br>檔案已自動存入：<b>output/${data.filename}</b>`;
           previewBox.innerHTML = `<h3>圖卡即時預覽：</h3><img src="/output/${data.filename}?t=${Date.now()}">`;
         } else {
           throw new Error(data.error || '生成失敗');
@@ -380,11 +380,11 @@ class DualModeGUIRequestHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 img_size = "1024x1024"
 
-            # Generate via OpenAI gpt-image-2.5-flare if available
+            # Generate via OpenAI gpt-image-2.6-flare if available
             try:
                 if client:
                     response = client.images.generate(
-                        model="gpt-image-2.5-flare",
+                        model="gpt-image-2.6-flare",
                         prompt=prompt_text,
                         size=img_size,
                         quality="high",
@@ -404,7 +404,7 @@ class DualModeGUIRequestHandler(http.server.SimpleHTTPRequestHandler):
                             f.write(img_data)
                     else:
                         raise Exception("No image data returned")
-                    res_payload = {"success": True, "filename": filename, "path": filepath, "engine": "OpenAI gpt-image-2.5-flare"}
+                    res_payload = {"success": True, "filename": filename, "path": filepath, "engine": "OpenAI gpt-image-2.6-flare"}
                 else:
                     raise Exception("OpenAI API Key not configured")
             except Exception as openai_err:
@@ -429,7 +429,7 @@ class DualModeGUIRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(res_payload).encode('utf-8'))
 
 if __name__ == '__main__':
-    print(f"🚀 高質感施政圖卡 & 政治文宣 GUI 服務啟動中 (OpenAI gpt-image-2.5-flare 已就緒)... 網址: http://localhost:{PORT}")
+    print(f"🚀 高質感施政圖卡 & 政治文宣 GUI 服務啟動中 (OpenAI gpt-image-2.6-flare 已就緒)... 網址: http://localhost:{PORT}")
     webbrowser.open(f"http://localhost:{PORT}")
     with socketserver.TCPServer(("", PORT), DualModeGUIRequestHandler) as httpd:
         try:

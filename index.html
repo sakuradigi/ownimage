@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPT Image 2.5 視覺創作與圖像修復工作台</title>
+  <title>GPT Image 2.6 視覺創作與圖像修復工作台</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -104,7 +104,7 @@
         </div>
         <div>
           <h1 class="font-black text-lg sm:text-xl tracking-wide bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white bg-clip-text text-transparent">
-            GPT Image 2.5 視覺創作與圖像修復工作台
+            GPT Image 2.6 視覺創作與圖像修復工作台
           </h1>
           <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
             支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 施政圖卡、政治攻防 & 2026選戰深度 Prompt ‧ 以圖生圖
@@ -166,8 +166,10 @@
             <span id="modelBadge" class="text-[10px] bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">極速生圖</span>
           </div>
           <select id="selectModel" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="gpt-image-2.5-flare" selected>gpt-image-2.5-flare (快速生圖)</option>
-            <option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst (旗艦：高精細/精準修圖)</option>
+            <option value="gpt-image-2.6-flare" selected>gpt-image-2.6-flare (最新・快速生圖)</option>
+            <option value="gpt-image-2.6-sunburst">gpt-image-2.6-sunburst (最新旗艦：高精細/精準修圖)</option>
+            <option value="gpt-image-2.5-flare">gpt-image-2.5-flare (上一代・快速)</option>
+            <option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst (上一代・旗艦)</option>
             <option value="gpt-image-2">gpt-image-2 (相容備用)</option>
           </select>
         </div>
@@ -195,13 +197,13 @@
               <option value="medium" selected>Medium 一般 (快速推薦)</option>
               <option value="high">High 高品質</option>
               <option value="low">Low 快速草稿</option>
-              <option value="xhigh">XHigh 精修 (僅 2.5)</option>
-              <option value="max">Max 最高 (僅 2.5，最慢)</option>
+              <option value="xhigh">XHigh 精修 (2.5 以上)</option>
+              <option value="max">Max 最高 (2.5 以上，最慢)</option>
             </select>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">背景模式 (GPT 2.5)</label>
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-300 block mb-1.5">背景模式 (GPT 2.6)</label>
             <select id="selectBackground" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:border-emerald-500">
               <option value="opaque" selected>不透明 Opaque</option>
               <option value="transparent">透明背景 Transparent</option>
@@ -424,7 +426,7 @@
         <!-- 執行按鈕 -->
         <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none" title="快捷鍵：在提示詞框按 Ctrl/⌘ + Enter">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
-          <span id="btnExecuteText">立即生成圖片 (GPT 2.5)</span>
+          <span id="btnExecuteText">立即生成圖片 (GPT 2.6)</span>
         </button>
         <div class="flex items-center justify-between -mt-2 px-1 text-[10px] text-slate-400">
           <span><kbd class="font-mono">Ctrl/⌘ + Enter</kbd> 快速送出</span>
@@ -524,6 +526,11 @@
             <i data-lucide="upload" class="w-3.5 h-3.5"></i> 開啟本機圖片
             <input type="file" id="fileUpload" accept="image/*" class="hidden">
           </label>
+
+          <!-- 清除重來 -->
+          <button id="btnResetAll" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold flex items-center gap-1.5 transition-colors" title="清空畫布、提示詞、參考素材與候選結果，重新開始（歷史圖庫保留）">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 清除重來
+          </button>
 
           <!-- 複製圖片 -->
           <button id="btnCopyImage" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="複製圖片到剪貼簿">
@@ -1653,10 +1660,10 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         if (referenceImages.length > 0) {
           btnExecuteText.innerText = `✨ 依據 ${referenceImages.length} 張素材生成${countBadge}`;
         } else {
-          btnExecuteText.innerText = `立即生成圖片 (GPT 2.5)${countBadge}`;
+          btnExecuteText.innerText = `立即生成圖片 (GPT 2.6)${countBadge}`;
         }
       } else if (currentMode === 'refine') {
-        btnExecuteText.innerText = '🚀 依據畫布原圖送出整體修正 (GPT 2.5)';
+        btnExecuteText.innerText = '🚀 依據畫布原圖送出整體修正 (GPT 2.6)';
       } else {
         btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
       }
@@ -2796,6 +2803,35 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       });
     });
 
+    // 清除重來：重置畫布、提示詞、參考素材、候選托盤與修圖狀態（歷史圖庫與 API Key 保留）
+    document.getElementById('btnResetAll').addEventListener('click', () => {
+      if (activeRequestController) {
+        showStatus('生成進行中，請先取消本次請求再清除', 'error');
+        return;
+      }
+      const hasWork = !!currentImageObj || inputPrompt.value.trim() || (inputQuickRefine && inputQuickRefine.value.trim()) || referenceImages.length > 0;
+      if (hasWork && !confirm('確定要清除目前畫布、提示詞與參考素材，重新開始嗎？\n（歷史圖庫中已生成的圖片會保留）')) return;
+
+      initCanvas(864, 1536);
+      canvasEmptyState.classList.remove('hidden');
+      inputPrompt.value = '';
+      if (inputQuickRefine) { inputQuickRefine.value = ''; autoResizeQuickRefine(); }
+      currentCanvasPrompt = '';
+      baseDesignPrompt = '';
+      editHistory = [];
+      currentBatchResults = [];
+      if (resultsTray) resultsTray.classList.add('hidden');
+      if (resultsTrayGrid) resultsTrayGrid.innerHTML = '';
+      referenceImages = [];
+      refImageInput.value = '';
+      renderRefImagesList();
+      if (typeof resetSkillMode === 'function') resetSkillMode();
+      if (typeof tabGenerate !== 'undefined' && tabGenerate) tabGenerate.click();
+      selectResolution.value = 'auto';
+      updateCountUI();
+      showStatus('🔄 已清除，可以開始新的創作了', 'success');
+    });
+
     document.getElementById('btnClearPrompt').addEventListener('click', () => {
       inputPrompt.value = '';
       currentCanvasPrompt = '';
@@ -2817,10 +2853,10 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     selectModel.addEventListener('change', () => {
       const badge = document.getElementById('modelBadge');
-      if (selectModel.value === 'gpt-image-2.5-sunburst') {
+      if (selectModel.value.endsWith('-sunburst')) {
         badge.innerText = '旗艦修圖';
         badge.className = 'text-[10px] bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold';
-      } else if (selectModel.value === 'gpt-image-2.5-flare') {
+      } else if (selectModel.value.endsWith('-flare')) {
         badge.innerText = '極速生圖';
         badge.className = 'text-[10px] bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full font-mono font-bold';
       } else {
@@ -3063,7 +3099,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     function normalizeQuality(model, q) {
       if (!q || q === 'auto') return null;
-      if ((q === 'xhigh' || q === 'max') && !model.startsWith('gpt-image-2.5')) return 'high';
+      if ((q === 'xhigh' || q === 'max') && !/^gpt-image-2\.[5-9]/.test(model)) return 'high';
       return q;
     }
 
@@ -3370,7 +3406,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
       const nativeW = originalNativeW;
       const nativeH = originalNativeH;
-      const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-sunburst';
+      const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.6-sunburst';
 
       setLoading(true, '正在準備畫布與遮罩...');
       try {
@@ -3523,7 +3559,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     // 13.1 純文字生圖 (支援 1~4 張批量與 auto 智能張數)
     async function executeGeneration(apiKey, prompt) {
       const count = getEffectiveCount();
-      setLoading(true, `正在呼叫 OpenAI GPT Image 2.5 生成 ${count > 1 ? `(${count} 張)...` : '中...'}`);
+      setLoading(true, `正在呼叫 OpenAI GPT Image 2.6 生成 ${count > 1 ? `(${count} 張)...` : '中...'}`);
       try {
         const model = selectModel.value;
         const size = getValidOpenAISize(selectResolution.value);
@@ -3604,7 +3640,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       const count = getEffectiveCount();
       setLoading(true, `正在依據 ${referenceImages.length} 張素材以圖生圖 ${count > 1 ? `(${count} 張)...` : '中...'}`);
       try {
-        const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.5-flare';
+        const model = selectModel.value.startsWith('gpt-image') ? selectModel.value : 'gpt-image-2.6-flare';
         const size = getValidOpenAISize(selectResolution.value);
         const [targetW, targetH] = size === 'auto' ? [1024, 1024] : size.split('x').map(Number);
         const sendMode = document.querySelector('input[name="refSendMode"]:checked')?.value || 'multi';
