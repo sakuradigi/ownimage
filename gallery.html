@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歷史相簿 ‧ GPT Image 工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['"Noto Sans TC"', '-apple-system', 'sans-serif'] } } } };
+    if (localStorage.getItem('app_theme') === 'light') document.documentElement.classList.remove('dark');
+  </script>
+  <style>
+    .card img { transition: transform .2s; }
+    .card:hover img { transform: scale(1.03); }
+    .sel-ring { outline: 3px solid #10b981; outline-offset: -3px; }
+    .checker { background-color:#0f172a; background-image: linear-gradient(45deg,#1e293b 25%,transparent 25%),linear-gradient(-45deg,#1e293b 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#1e293b 75%),linear-gradient(-45deg,transparent 75%,#1e293b 75%); background-size:16px 16px; background-position:0 0,0 8px,8px -8px,-8px 0; }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen">
+
+  <!-- 頂部工具列 -->
+  <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-[1800px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+      <a href="index.html" class="flex items-center gap-1.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> 回工作台
+      </a>
+      <h1 class="font-black text-base flex items-center gap-2"><i data-lucide="images" class="w-5 h-5 text-emerald-500"></i> 歷史相簿 <span id="countLabel" class="text-xs font-mono text-slate-400"></span></h1>
+
+      <div class="relative flex-1 min-w-[200px] max-w-md">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="q" type="search" placeholder="搜尋提示詞、修改指令…" class="w-full pl-9 pr-3 py-2 rounded-xl text-sm bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-emerald-500">
+      </div>
+
+      <select id="fModel" class="px-2.5 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700"><option value="">全部模型</option></select>
+      <select id="fRange" class="px-2.5 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700">
+        <option value="">全部時間</option><option value="1">今天</option><option value="7">近 7 天</option><option value="30">近 30 天</option>
+      </select>
+      <select id="fType" class="px-2.5 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700">
+        <option value="">全部類型</option><option value="gen">生成圖</option><option value="edit">修圖版本</option>
+      </select>
+      <select id="fSort" class="px-2.5 py-2 rounded-xl text-xs bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700">
+        <option value="new">新→舊</option><option value="old">舊→新</option>
+      </select>
+
+      <label class="flex items-center gap-1.5 text-xs text-slate-500" title="縮圖大小">
+        <i data-lucide="grid-2x2" class="w-4 h-4"></i>
+        <input id="zoom" type="range" min="120" max="360" step="20" value="200" class="w-24 accent-emerald-500">
+      </label>
+      <button id="btnSelectMode" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-1.5"><i data-lucide="check-square" class="w-4 h-4"></i> 多選</button>
+    </div>
+
+    <!-- 多選操作列 -->
+    <div id="selBar" class="hidden border-t border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/60">
+      <div class="max-w-[1800px] mx-auto px-4 py-2 flex flex-wrap items-center gap-3 text-xs">
+        <span>已選 <b id="selCount">0</b> 張</span>
+        <button id="btnSelAll" class="text-emerald-700 dark:text-emerald-300 hover:underline">全選目前結果</button>
+        <button id="btnSelNone" class="text-slate-500 hover:underline">取消選取</button>
+        <span class="flex-1"></span>
+        <button id="btnSelDl" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1"><i data-lucide="download" class="w-3.5 h-3.5"></i> 下載所選</button>
+        <button id="btnSelDel" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold flex items-center gap-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 刪除所選</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="max-w-[1800px] mx-auto px-4 py-5">
+    <div id="loading" class="text-center text-slate-400 py-20">讀取本機相簿中…</div>
+    <div id="empty" class="hidden text-center text-slate-400 py-20">沒有符合的圖片</div>
+    <div id="groups" class="flex flex-col gap-8"></div>
+    <div class="text-center py-6"><button id="btnMore" class="hidden px-5 py-2 rounded-xl text-sm font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700">載入更多</button></div>
+  </main>
+
+  <!-- 大圖檢視 -->
+  <div id="lb" class="hidden fixed inset-0 z-50 bg-black/90 flex">
+    <button id="lbPrev" class="absolute left-3 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+    <button id="lbNext" class="absolute right-[340px] top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white hidden md:block"><i data-lucide="chevron-right" class="w-6 h-6"></i></button>
+    <div class="flex-1 flex items-center justify-center p-4 checker"><img id="lbImg" class="max-w-full max-h-full object-contain"></div>
+    <aside class="w-[320px] max-w-[45vw] bg-slate-900 text-slate-100 p-4 overflow-y-auto flex flex-col gap-3 text-xs">
+      <div class="flex items-center justify-between">
+        <span id="lbIdx" class="font-mono text-slate-400"></span>
+        <button id="lbClose" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div><div class="text-slate-400 mb-1">建立時間</div><div id="lbTime"></div></div>
+      <div><div class="text-slate-400 mb-1">模型 ‧ 尺寸</div><div id="lbMeta" class="font-mono"></div></div>
+      <div><div class="text-slate-400 mb-1 flex items-center justify-between">提示詞 <button id="lbCopy" class="text-emerald-400 hover:underline">複製</button></div><div id="lbPrompt" class="whitespace-pre-wrap break-words bg-slate-950 rounded-lg p-2 max-h-60 overflow-y-auto"></div></div>
+      <div id="lbEditsBox" class="hidden"><div class="text-slate-400 mb-1">修改歷程</div><ol id="lbEdits" class="list-decimal pl-4 flex flex-col gap-1"></ol></div>
+      <div class="mt-auto flex flex-col gap-2">
+        <button id="lbOpen" class="py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold flex items-center justify-center gap-1.5"><i data-lucide="pencil-ruler" class="w-4 h-4"></i> 在工作台開啟編輯</button>
+        <div class="flex gap-2">
+          <button id="lbDl" class="flex-1 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold flex items-center justify-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> 下載</button>
+          <button id="lbDel" class="flex-1 py-2 rounded-xl bg-rose-700 hover:bg-rose-600 font-bold flex items-center justify-center gap-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i> 刪除</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  // 與工作台共用同一個 IndexedDB（同網域）
+  const DB_NAME = 'VisualStudioHistoryDB', DB_VERSION = 1, STORE = 'generated_images';
+  const PAGE = 120;
+
+  let all = [];          // 全部紀錄（含 dataUrl）
+  let view = [];         // 篩選後
+  let shown = 0;
+  let selectMode = false;
+  const selected = new Set();
+  let lbIndex = -1;
+  const blobCache = new Map();
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  function openDB() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(DB_NAME, DB_VERSION);
+      r.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id', autoIncrement: true }).createIndex('timestamp', 'timestamp');
+      };
+      r.onsuccess = e => res(e.target.result);
+      r.onerror = e => rej(e.target.error);
+    });
+  }
+  async function dbGetAll() {
+    const db = await openDB();
+    return new Promise((res, rej) => { const r = db.transaction(STORE).objectStore(STORE).getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); });
+  }
+  async function dbDelete(ids) {
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE, 'readwrite'); const s = tx.objectStore(STORE);
+      ids.forEach(id => s.delete(id));
+      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+    });
+  }
+
+  // 縮圖：以 blob URL 取代超長的 data URL，並只在進入可視範圍時才建立
+  function blobUrlFor(item) {
+    if (blobCache.has(item.id)) return blobCache.get(item.id);
+    const [head, b64] = item.dataUrl.split(',');
+    if (!b64) return item.dataUrl;
+    const mime = (head.match(/data:(.*?);/) || [])[1] || 'image/png';
+    const bin = atob(b64); const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([arr], { type: mime }));
+    blobCache.set(item.id, url);
+    return url;
+  }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      const img = en.target; io.unobserve(img);
+      const item = all.find(x => x.id === Number(img.dataset.id));
+      if (item) img.src = blobUrlFor(item);
+    });
+  }, { rootMargin: '600px' });
+
+  const isEdit = it => (it.edits && it.edits.length > 0) || /^\[(紅框|全圖)/.test(it.prompt || '');
+  const dayKey = ts => { const d = new Date(ts); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; };
+  const weekday = ts => '日一二三四五六'[new Date(ts).getDay()];
+  const fullTime = ts => new Date(ts).toLocaleString('zh-TW', { hour12: false });
+  const searchText = it => `${it.prompt || ''}\n${it.basePrompt || ''}\n${(it.edits || []).join('\n')}`.toLowerCase();
+
+  function applyFilters() {
+    const q = $('q').value.trim().toLowerCase();
+    const model = $('fModel').value, range = Number($('fRange').value || 0), type = $('fType').value;
+    const now = Date.now();
+    const startToday = new Date(); startToday.setHours(0,0,0,0);
+    view = all.filter(it => {
+      if (q && !q.split(/\s+/).every(w => searchText(it).includes(w))) return false;
+      if (model && it.model !== model) return false;
+      if (range) { const from = range === 1 ? startToday.getTime() : now - range * 86400000; if (it.timestamp < from) return false; }
+      if (type === 'gen' && isEdit(it)) return false;
+      if (type === 'edit' && !isEdit(it)) return false;
+      return true;
+    });
+    view.sort((a, b) => $('fSort').value === 'old' ? a.timestamp - b.timestamp : b.timestamp - a.timestamp);
+    shown = 0;
+    $('groups').innerHTML = '';
+    $('countLabel').textContent = `(${view.length} / ${all.length})`;
+    $('empty').classList.toggle('hidden', view.length > 0);
+    renderMore();
+  }
+
+  function renderMore() {
+    const slice = view.slice(shown, shown + PAGE);
+    const size = $('zoom').value;
+    slice.forEach((it, i) => {
+      const idx = shown + i;
+      const key = dayKey(it.timestamp);
+      let grp = $('groups').querySelector(`[data-day="${key}"]`);
+      if (!grp) {
+        grp = document.createElement('section');
+        grp.dataset.day = key;
+        grp.innerHTML = `<h2 class="text-sm font-black mb-2 flex items-center gap-2"><span>${key}（週${weekday(it.timestamp)}）</span><span class="text-xs font-normal text-slate-400" data-n></span><button type="button" data-daysel class="text-xs font-normal text-emerald-600 dark:text-emerald-400 hover:underline hidden">選取當天</button></h2><div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(${size}px,1fr))"></div>`;
+        $('groups').appendChild(grp);
+        grp.querySelector('[data-daysel]').addEventListener('click', () => {
+          view.filter(x => dayKey(x.timestamp) === key).forEach(x => selected.add(x.id));
+          refreshSel();
+        });
+      }
+      const card = document.createElement('div');
+      card.className = 'card group relative aspect-square rounded-xl overflow-hidden bg-slate-800 cursor-pointer shadow';
+      card.dataset.id = it.id; card.dataset.idx = idx;
+      card.innerHTML = `
+        <img data-id="${it.id}" class="w-full h-full object-cover" alt="">
+        <div class="absolute inset-x-0 bottom-0 p-1.5 bg-gradient-to-t from-black/80 to-transparent text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <div class="line-clamp-2 break-words">${esc((it.prompt || '').slice(0, 80))}</div>
+        </div>
+        <span class="absolute top-1 left-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white">${esc(it.createdAt || '')}</span>
+        ${isEdit(it) ? '<span class="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-600 text-white">修圖</span>' : ''}
+        <span data-chk class="hidden absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full border-2 border-white bg-black/40 items-center justify-center text-white text-xs"></span>`;
+      card.addEventListener('click', () => {
+        if (selectMode) { toggleSel(it.id); } else { openLb(idx); }
+      });
+      grp.querySelector('.grid').appendChild(card);
+      io.observe(card.querySelector('img'));
+    });
+    shown += slice.length;
+    document.querySelectorAll('[data-day]').forEach(g => {
+      g.querySelector('[data-n]').textContent = `${g.querySelectorAll('.card').length} 張`;
+    });
+    $('btnMore').classList.toggle('hidden', shown >= view.length);
+    $('btnMore').textContent = `載入更多（還有 ${view.length - shown} 張）`;
+    refreshSel();
+    lucide.createIcons();
+  }
+
+  // ---- 多選 ----
+  function toggleSel(id) { selected.has(id) ? selected.delete(id) : selected.add(id); refreshSel(); }
+  function refreshSel() {
+    $('selBar').classList.toggle('hidden', !selectMode);
+    $('selCount').textContent = selected.size;
+    document.querySelectorAll('[data-daysel]').forEach(b => b.classList.toggle('hidden', !selectMode));
+    document.querySelectorAll('.card').forEach(c => {
+      const on = selected.has(Number(c.dataset.id));
+      c.classList.toggle('sel-ring', on);
+      const chk = c.querySelector('[data-chk]');
+      chk.classList.toggle('hidden', !selectMode);
+      chk.classList.toggle('flex', selectMode);
+      chk.textContent = on ? '✓' : '';
+      chk.classList.toggle('bg-emerald-500', on);
+    });
+  }
+  $('btnSelectMode').addEventListener('click', () => { selectMode = !selectMode; if (!selectMode) selected.clear(); refreshSel(); });
+  $('btnSelAll').addEventListener('click', () => { view.forEach(x => selected.add(x.id)); refreshSel(); });
+  $('btnSelNone').addEventListener('click', () => { selected.clear(); refreshSel(); });
+
+  function downloadItem(it) {
+    const a = document.createElement('a');
+    const ext = (it.dataUrl.match(/^data:image\/(\w+)/) || [, 'png'])[1].replace('jpeg', 'jpg');
+    a.download = `AI圖_${dayKey(it.timestamp).replace(/\//g, '')}_${(it.createdAt || '').replace(':', '')}_${it.id}.${ext}`;
+    a.href = blobUrlFor(it);
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  $('btnSelDl').addEventListener('click', () => {
+    const items = all.filter(x => selected.has(x.id));
+    if (!items.length) return;
+    if (items.length > 10 && !confirm(`將連續下載 ${items.length} 個檔案，瀏覽器可能會詢問是否允許多檔下載，確定？`)) return;
+    items.forEach((it, i) => setTimeout(() => downloadItem(it), i * 400));
+  });
+  $('btnSelDel').addEventListener('click', async () => {
+    if (!selected.size) return;
+    if (!confirm(`確定從本機資料庫永久刪除 ${selected.size} 張圖片？此動作無法復原。`)) return;
+    await removeIds([...selected]);
+    selected.clear();
+  });
+  async function removeIds(ids) {
+    await dbDelete(ids);
+    ids.forEach(id => { const u = blobCache.get(id); if (u) { URL.revokeObjectURL(u); blobCache.delete(id); } });
+    all = all.filter(x => !ids.includes(x.id));
+    refreshModelOptions();
+    applyFilters();
+  }
+
+  // ---- 大圖檢視 ----
+  function openLb(idx) {
+    if (idx < 0 || idx >= view.length) return;
+    lbIndex = idx;
+    const it = view[idx];
+    $('lbImg').src = blobUrlFor(it);
+    $('lbIdx').textContent = `${idx + 1} / ${view.length}`;
+    $('lbTime').textContent = fullTime(it.timestamp);
+    $('lbMeta').textContent = `${it.model || '-'} ‧ ${it.size || '-'}`;
+    $('lbPrompt').textContent = it.basePrompt || it.prompt || '';
+    const edits = it.edits || [];
+    $('lbEditsBox').classList.toggle('hidden', !edits.length);
+    $('lbEdits').innerHTML = edits.map(e => `<li class="break-words">${esc(e)}</li>`).join('');
+    $('lb').classList.remove('hidden');
+    $('lb').classList.add('flex');
+  }
+  function closeLb() { $('lb').classList.add('hidden'); $('lb').classList.remove('flex'); lbIndex = -1; }
+  $('lbClose').addEventListener('click', closeLb);
+  $('lbPrev').addEventListener('click', () => openLb(lbIndex - 1));
+  $('lbNext').addEventListener('click', () => openLb(lbIndex + 1));
+  $('lbDl').addEventListener('click', () => downloadItem(view[lbIndex]));
+  $('lbCopy').addEventListener('click', async () => { await navigator.clipboard.writeText(view[lbIndex].basePrompt || view[lbIndex].prompt || ''); $('lbCopy').textContent = '已複製'; setTimeout(() => $('lbCopy').textContent = '複製', 1200); });
+  $('lbOpen').addEventListener('click', () => { window.open(`index.html?loadHistory=${view[lbIndex].id}`, '_blank'); });
+  $('lbDel').addEventListener('click', async () => {
+    if (!confirm('確定永久刪除這張圖片？')) return;
+    const id = view[lbIndex].id, keep = lbIndex;
+    await removeIds([id]);
+    if (view.length) openLb(Math.min(keep, view.length - 1)); else closeLb();
+  });
+  document.addEventListener('keydown', e => {
+    if (lbIndex < 0) return;
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') openLb(lbIndex - 1);
+    if (e.key === 'ArrowRight') openLb(lbIndex + 1);
+  });
+  $('lb').addEventListener('click', e => { if (e.target.classList.contains('checker')) closeLb(); });
+
+  // ---- 篩選器事件 ----
+  function refreshModelOptions() {
+    const cur = $('fModel').value;
+    const models = [...new Set(all.map(x => x.model).filter(Boolean))].sort();
+    $('fModel').innerHTML = '<option value="">全部模型</option>' + models.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    $('fModel').value = models.includes(cur) ? cur : '';
+  }
+  let t; $('q').addEventListener('input', () => { clearTimeout(t); t = setTimeout(applyFilters, 200); });
+  ['fModel', 'fRange', 'fType', 'fSort'].forEach(id => $(id).addEventListener('change', applyFilters));
+  $('zoom').addEventListener('input', () => {
+    localStorage.setItem('gallery_zoom', $('zoom').value);
+    document.querySelectorAll('#groups .grid').forEach(g => g.style.gridTemplateColumns = `repeat(auto-fill,minmax(${$('zoom').value}px,1fr))`);
+  });
+  $('btnMore').addEventListener('click', renderMore);
+  // 捲到底自動載入更多
+  new IntersectionObserver(es => { if (es[0].isIntersecting && shown < view.length) renderMore(); }, { rootMargin: '400px' }).observe($('btnMore'));
+
+  (async function init() {
+    if (localStorage.getItem('gallery_zoom')) $('zoom').value = localStorage.getItem('gallery_zoom');
+    try { all = await dbGetAll(); } catch (e) { console.error(e); }
+    $('loading').classList.add('hidden');
+    refreshModelOptions();
+    applyFilters();
+    lucide.createIcons();
+  })();
+</script>
+</body>
+</html>
