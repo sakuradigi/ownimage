@@ -420,14 +420,6 @@
           </p>
         </div>
 
-        <!-- 自動備份下載勾選框 -->
-        <div class="flex items-center justify-between px-1">
-          <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-400 select-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-            <input type="checkbox" id="chkAutoDownload" class="rounded accent-emerald-500 w-4 h-4 cursor-pointer" checked>
-            <span class="font-medium">生成完成後自動下載至電腦備份 (Downloads)</span>
-          </label>
-        </div>
-
         <!-- 執行按鈕 -->
         <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none" title="快捷鍵：在提示詞框按 Ctrl/⌘ + Enter">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
@@ -971,7 +963,6 @@
     const historyStrip = document.getElementById('historyStrip');
     const historyEmptyMsg = document.getElementById('historyEmptyMsg');
     const historyCount = document.getElementById('historyCount');
-    const chkAutoDownload = document.getElementById('chkAutoDownload');
     const canvasViewport = document.getElementById('canvasViewport');
     const canvasWrapper = document.getElementById('canvasWrapper');
 
@@ -3460,9 +3451,6 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         await saveImageToDB(resultUrl, title, model, `${nativeW}x${nativeH}`, { basePrompt: baseDesignPrompt, edits: [...editHistory] });
         refreshGalleryFromDB();
 
-        if (chkAutoDownload.checked) {
-          triggerAutoDownload(resultUrl, instruction);
-        }
 
         showStatus(exp.hasMask
           ? `✨ 紅框區域修改完成（覆蓋約 ${exp.maskCoveragePercent}%${lockOutside ? '，框外已像素鎖定' : ''}），已存入歷史庫`
@@ -3620,11 +3608,6 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         // 若有多張，展開挑選托盤供比對切換
         renderResultsTray(imageUrls, { w, h, prompt, model, size });
 
-        if (chkAutoDownload.checked) {
-          imageUrls.forEach((url, i) => {
-            setTimeout(() => triggerAutoDownload(url, `${prompt.slice(0, 30)}_${i + 1}`), i * 350);
-          });
-        }
 
         showStatus(`🎉 ${imageUrls.length} 張圖片生成成功！已存入本機資料庫`, 'success');
       } catch (err) {
@@ -3700,11 +3683,6 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
         renderResultsTray(imageUrls, { w: outW, h: outH, prompt, model, size });
 
-        if (chkAutoDownload.checked) {
-          imageUrls.forEach((url, i) => {
-            setTimeout(() => triggerAutoDownload(url, `${prompt.slice(0, 30)}_${i + 1}`), i * 350);
-          });
-        }
 
         showStatus(`✨ 以圖生圖成功！已融合 ${referenceImages.length} 張素材生成 ${imageUrls.length} 張圖片`, 'success');
       } catch (err) {
