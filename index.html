@@ -244,6 +244,12 @@
               <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)
             </label>
             <div class="flex items-center gap-3">
+              <button type="button" id="btnSavePreset" class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1" title="把目前的提示詞＋參考素材＋參數存成範本，之後一鍵套用">
+                <i data-lucide="bookmark-plus" class="w-3.5 h-3.5"></i> 存範本
+              </button>
+              <button type="button" id="btnOpenPresets" class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1" title="開啟已儲存的範本">
+                <i data-lucide="bookmarks" class="w-3.5 h-3.5"></i> 範本 <span id="presetCount" class="font-mono text-[10px]"></span>
+              </button>
               <button type="button" id="btnHistoryMain" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1" title="查看／還原過去用過的提示詞">
                 <i data-lucide="history" class="w-3.5 h-3.5"></i> 歷史
               </button>
@@ -4219,6 +4225,168 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     }, true);
     inputPrompt.addEventListener('blur', () => recordPrompt('main', inputPrompt.value, '離開輸入框'));
     if (inputQuickRefine) inputQuickRefine.addEventListener('blur', () => recordPrompt('refine', inputQuickRefine.value, '離開輸入框'));
+
+    // -------------------------------------------------------------
+    // 14.6 範本（Preset）：儲存 提示詞 ＋ 參考素材圖 ＋ 生成參數，一鍵套用
+    // 使用獨立資料庫，不影響歷史圖庫
+    // -------------------------------------------------------------
+    const PRESET_DB = 'OwnImagePresetsDB';
+    const PRESET_STORE = 'presets';
+
+    function openPresetDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(PRESET_DB, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(PRESET_STORE)) db.createObjectStore(PRESET_STORE, { keyPath: 'id', autoIncrement: true });
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+    async function presetTx(mode, fn) {
+      const db = await openPresetDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(PRESET_STORE, mode);
+        const req = fn(tx.objectStore(PRESET_STORE));
+        tx.oncomplete = () => resolve(req && req.result);
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    const presetGetAll = async () => ((await presetTx('readonly', s => s.getAll())) || []).sort((a, b) => b.updatedAt - a.updatedAt);
+    const presetPut = (item) => presetTx('readwrite', s => s.put(item));
+    const presetDelete = (id) => presetTx('readwrite', s => s.delete(id));
+
+    async function refreshPresetCount() {
+      try {
+        const n = (await presetGetAll()).length;
+        document.getElementById('presetCount').textContent = n ? `(${n})` : '';
+      } catch (_) { /* 無痕模式等情況略過 */ }
+    }
+
+    async function saveCurrentAsPreset() {
+      const text = inputPrompt.value.trim();
+      if (!text && referenceImages.length === 0) {
+        showStatus('目前沒有提示詞或素材可以儲存', 'error');
+        return;
+      }
+      const defaultName = (text.replace(/\s+/g, ' ').slice(0, 16) || '未命名範本');
+      const name = window.prompt('範本名稱（同名會覆蓋更新）：', defaultName);
+      if (name === null) return;
+      const finalName = name.trim() || defaultName;
+      const existing = (await presetGetAll()).find(p => p.name === finalName);
+      if (existing && !confirm(`已有同名範本「${finalName}」，要覆蓋更新嗎？`)) return;
+      const item = {
+        ...(existing ? { id: existing.id } : {}),
+        name: finalName,
+        prompt: inputPrompt.value,
+        refs: referenceImages.map(r => ({ dataUrl: r.dataUrl, name: r.name, width: r.width, height: r.height })),
+        settings: {
+          model: selectModel.value, size: selectResolution.value, quality: selectQuality.value,
+          background: selectBackground.value, format: selectFormat.value, count: selectedCountSetting
+        },
+        createdAt: existing ? existing.createdAt : Date.now(),
+        updatedAt: Date.now()
+      };
+      try {
+        await presetPut(item);
+        refreshPresetCount();
+        showStatus(`🔖 已儲存範本「${finalName}」（提示詞${item.refs.length ? ` ＋ ${item.refs.length} 張素材` : ''} ＋ 參數）`, 'success');
+      } catch (err) {
+        showStatus(`範本儲存失敗：${err.message || err}`, 'error');
+      }
+    }
+
+    function applyPreset(p) {
+      recordPrompt('main', inputPrompt.value, '套用範本前');
+      inputPrompt.value = p.prompt || '';
+      currentCanvasPrompt = inputPrompt.value.trim();
+      referenceImages = (p.refs || []).map(r => ({
+        id: 'ref_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        file: null, dataUrl: r.dataUrl, name: r.name, width: r.width, height: r.height
+      }));
+      renderRefImagesList();
+      const s = p.settings || {};
+      const setSel = (el, v) => { if (v && [...el.options].some(o => o.value === v)) el.value = v; };
+      setSel(selectModel, s.model); setSel(selectResolution, s.size); setSel(selectQuality, s.quality);
+      setSel(selectBackground, s.background); setSel(selectFormat, s.format);
+      selectModel.dispatchEvent(new Event('change'));
+      if (s.count) { selectedCountSetting = s.count; localStorage.setItem('openaimeme_image_count', s.count); }
+      updateCountUI();
+      if (typeof tabGenerate !== 'undefined' && tabGenerate && currentMode !== 'generate') tabGenerate.click();
+      showStatus(`📂 已套用範本「${p.name}」`, 'success');
+    }
+
+    let presetModal = null;
+    function ensurePresetModal() {
+      if (presetModal) return presetModal;
+      const el = document.createElement('div');
+      el.className = 'hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
+      el.innerHTML = `
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="bookmarks" class="w-4 h-4 text-amber-500"></i> 我的範本</span>
+            <button type="button" data-act="close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          </div>
+          <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-2" data-role="list"></div>
+          <div class="px-4 pb-3 text-[11px] text-slate-400">範本包含提示詞、參考素材圖與生成參數，僅存在本機瀏覽器。套用會取代目前的提示詞與素材（原提示詞會先存入歷史）。</div>
+        </div>`;
+      document.body.appendChild(el);
+      el.addEventListener('click', async (e) => {
+        if (e.target === el || e.target.closest('[data-act="close"]')) { el.classList.add('hidden'); return; }
+        const row = e.target.closest('[data-id]');
+        if (!row) return;
+        const id = Number(row.dataset.id);
+        const p = (await presetGetAll()).find(x => x.id === id);
+        if (!p) return;
+        if (e.target.closest('[data-act="delete"]')) {
+          if (!confirm(`刪除範本「${p.name}」？`)) return;
+          await presetDelete(id); refreshPresetCount(); renderPresetList();
+        } else if (e.target.closest('[data-act="rename"]')) {
+          const n = window.prompt('新的範本名稱：', p.name);
+          if (n && n.trim()) { p.name = n.trim(); p.updatedAt = Date.now(); await presetPut(p); renderPresetList(); }
+        } else {
+          applyPreset(p);
+          el.classList.add('hidden');
+        }
+      });
+      presetModal = el;
+      return el;
+    }
+
+    async function renderPresetList() {
+      const el = ensurePresetModal();
+      const list = await presetGetAll();
+      const box = el.querySelector('[data-role="list"]');
+      box.innerHTML = list.length ? list.map(p => `
+        <div data-id="${p.id}" class="flex gap-3 border border-slate-200 dark:border-slate-700 hover:border-amber-400 rounded-xl p-2.5 bg-slate-50 dark:bg-slate-950 cursor-pointer transition-colors">
+          <div class="flex-shrink-0 flex gap-1">
+            ${(p.refs || []).slice(0, 3).map(r => `<img src="${r.dataUrl}" class="w-14 h-14 rounded-lg object-cover bg-slate-800">`).join('') || '<div class="w-14 h-14 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-[10px]">純文字</div>'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">${escapeHtml(p.name)}</span>
+              <span class="flex items-center gap-3 text-[11px] flex-shrink-0">
+                <button type="button" data-act="rename" class="text-slate-400 hover:text-slate-700 dark:hover:text-white">改名</button>
+                <button type="button" data-act="delete" class="text-slate-400 hover:text-rose-500">刪除</button>
+              </span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-0.5">${formatPromptTime(p.updatedAt)} ‧ ${(p.refs || []).length} 張素材 ‧ ${escapeHtml((p.settings && p.settings.model) || '')}</div>
+            <div class="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 break-words">${escapeHtml((p.prompt || '').slice(0, 160))}</div>
+          </div>
+        </div>`).join('') : '<div class="text-center text-sm text-slate-400 py-8">還沒有範本。設定好提示詞與素材後，按「存範本」即可儲存。</div>';
+      lucide.createIcons();
+    }
+
+    document.getElementById('btnSavePreset').addEventListener('click', saveCurrentAsPreset);
+    document.getElementById('btnOpenPresets').addEventListener('click', async () => {
+      await renderPresetList();
+      ensurePresetModal().classList.remove('hidden');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && presetModal && !presetModal.classList.contains('hidden')) presetModal.classList.add('hidden');
+    });
+    refreshPresetCount();
 
     // -------------------------------------------------------------
     // 15. 應用程式啟動初始化
