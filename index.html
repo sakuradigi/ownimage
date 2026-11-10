@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GPT Image 2.6 視覺創作與圖像修復工作台</title>
+  <title>GPT Image 工作台</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -104,11 +104,8 @@
         </div>
         <div>
           <h1 class="font-black text-lg sm:text-xl tracking-wide bg-gradient-to-r from-emerald-600 via-teal-600 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white bg-clip-text text-transparent">
-            GPT Image 2.6 視覺創作與圖像修復工作台
+            GPT Image 工作台
           </h1>
-          <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-            支援 OpenAI Sunburst / Flare 旗艦模型 ‧ 施政圖卡、政治攻防 & 2026選戰深度 Prompt ‧ 以圖生圖
-          </p>
         </div>
       </div>
 
@@ -225,7 +222,7 @@
               <label class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
                 <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i> 生成張數
               </label>
-              <span id="countHint" class="text-[10px] text-slate-400">每張分別計費</span>
+              <span id="countHint" class="text-[10px] text-slate-400"></span>
             </div>
             <div id="countSelector" class="grid grid-cols-5 gap-1 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-1" role="radiogroup" aria-label="生成張數">
               <button type="button" class="count-btn py-1.5 rounded-lg text-xs font-bold transition-colors" data-count="1" role="radio">1 張</button>
@@ -241,13 +238,13 @@
         <div class="flex flex-col flex-1">
           <div class="flex items-center justify-between mb-1.5">
             <label id="promptLabel" class="text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-              <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 生圖提示詞 (Prompt)
+              <i data-lucide="message-square-plus" class="w-3.5 h-3.5 text-emerald-500"></i> 提示詞
             </label>
-            <div class="flex items-center gap-3">
-              <button type="button" id="btnSavePreset" class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1" title="把目前的提示詞＋參考素材＋參數存成範本，之後一鍵套用">
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnSavePreset" class="text-xs font-bold px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 flex items-center gap-1" title="把目前的提示詞＋參考素材＋參數存成範本">
                 <i data-lucide="bookmark-plus" class="w-3.5 h-3.5"></i> 存範本
               </button>
-              <button type="button" id="btnOpenPresets" class="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1" title="開啟已儲存的範本">
+              <button type="button" id="btnOpenPresets" class="text-xs font-bold px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 flex items-center gap-1" title="開啟範本庫">
                 <i data-lucide="bookmarks" class="w-3.5 h-3.5"></i> 範本 <span id="presetCount" class="font-mono text-[10px]"></span>
               </button>
               <button type="button" id="btnHistoryMain" class="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1" title="查看／還原過去用過的提示詞">
@@ -257,11 +254,10 @@
             </div>
           </div>
 
-          <textarea id="inputPrompt" rows="5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors custom-scrollbar resize-none" placeholder="描述您想生成的圖卡、早安圖或主體場景...（例如：早安圖，質感、綠意、舒適、溫馨晨光，細膩光影）"></textarea>
+          <textarea id="inputPrompt" rows="5" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors custom-scrollbar resize-none" placeholder="描述想生成的畫面…"></textarea>
 
           <!-- 快速風格標籤 -->
           <div class="mt-2 flex flex-wrap gap-1.5">
-            <span class="text-[11px] text-slate-400 self-center mr-1">快捷靈感:</span>
             <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="早安圖質感生活風格，溫馨晨光照射翠綠植栽，自然柔和色調">早安綠意</button>
             <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="高質感官方施政報告宣傳圖卡，簡約大器構圖，現代美學">文宣圖卡</button>
             <button class="style-tag px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs rounded-md text-slate-700 dark:text-slate-300 transition-colors" data-tag="新聞快報鏡頭視角，帶有突發即時報導現場感">新聞現場</button>
@@ -274,9 +270,8 @@
         <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5 transition-colors">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i> 專業圖卡深度 Prompt 模式
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-500"></i> 專業版型
             </span>
-            <span class="text-[10px] text-slate-400">點選自動套用</span>
           </div>
 
           <!-- 三個 .md 模式快捷切換按鈕 -->
@@ -289,7 +284,6 @@
                 </span>
                 <span id="dotPolicy" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">重大建設/半屏融圖/評比</p>
             </button>
 
             <!-- 模式 2：政治攻防與事實澄清 (political-meme) -->
@@ -300,7 +294,6 @@
                 </span>
                 <span id="dotMeme" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">新聞打臉/迴旋鏢/雙標</p>
             </button>
 
             <!-- 模式 3：2026 選戰專用圖卡 (campaign-card) -->
@@ -311,7 +304,6 @@
                 </span>
                 <span id="dotCampaign" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></span>
               </div>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">金句哲思/造勢壓字/背書</p>
             </button>
           </div>
 
@@ -339,11 +331,10 @@
         <div class="bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl p-3 flex flex-col gap-2.5 transition-colors">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer">
-              <i data-lucide="images" class="w-3.5 h-3.5 text-teal-500"></i> 參考素材 (以圖生圖 / 雙人合體)
+              <i data-lucide="images" class="w-3.5 h-3.5 text-teal-500"></i> 參考素材
             </label>
             <div class="flex items-center gap-2">
               <span id="refImageCountBadge" class="hidden text-[10px] font-bold px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300">0 / 5 張</span>
-              <span class="text-[10px] text-slate-400">最多 5 張</span>
             </div>
           </div>
 
@@ -356,8 +347,7 @@
                 <span class="text-xs text-slate-300 dark:text-slate-700">/</span>
                 <i data-lucide="clipboard-paste" class="w-4 h-4"></i>
               </div>
-              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">點擊上傳、拖放 或 直接 <kbd class="px-1.5 py-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md font-mono text-teal-600 dark:text-teal-400 font-bold">Ctrl+V</kbd> 貼上</p>
-              <p class="text-[10px] text-slate-400">支援截圖直接貼上、多圖同時選取 (最多 5 張)</p>
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">上傳 / 拖放 / <kbd class="px-1.5 py-0.5 text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md font-mono text-teal-600 dark:text-teal-400 font-bold">Ctrl+V</kbd></p>
             </div>
           </div>
 
@@ -386,53 +376,40 @@
             <div class="bg-white/80 dark:bg-slate-900/80 rounded-lg p-2 border border-slate-200 dark:border-slate-800 flex flex-col gap-1 text-[11px]">
               <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
                 <span class="font-medium flex items-center gap-1">
-                  <i data-lucide="sliders-horizontal" class="w-3 h-3 text-teal-500"></i> 素材融合模式：
+                  <i data-lucide="sliders-horizontal" class="w-3 h-3 text-teal-500"></i> 融合模式
                 </span>
               </div>
               <div class="grid grid-cols-2 gap-1.5 mt-0.5">
                 <label class="flex items-center gap-1.5 p-1.5 rounded border border-teal-500/40 bg-teal-50/50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-200 cursor-pointer text-[10.5px]">
                   <input type="radio" name="refSendMode" value="multi" class="accent-teal-500" checked>
-                  <span class="font-semibold">原生多圖傳送</span>
+                  <span class="font-semibold">原生多圖</span>
                 </label>
                 <label class="flex items-center gap-1.5 p-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 cursor-pointer text-[10.5px]">
                   <input type="radio" name="refSendMode" value="composite" class="accent-teal-500">
-                  <span class="font-semibold">雙人並排合拼圖</span>
+                  <span class="font-semibold">並排合拼圖</span>
                 </label>
               </div>
-              <p class="text-[9.5px] text-slate-400 dark:text-slate-500 leading-tight mt-0.5">
-                💡 提示：在 Prompt 中指名「【素材1】為候選人，【素材2】為站台貴賓」，AI 能更精確分配兩人的位置與動作！
-              </p>
             </div>
           </div>
         </div>
 
         <!-- 局部修圖提示引導 (修圖分頁顯示) -->
-        <div id="inpaintGuideBox" class="hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3 text-xs text-rose-800 dark:text-rose-200">
-          <p class="font-bold flex items-center gap-1.5 mb-1">
-            <i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 局部修改操作指引：
-          </p>
-          <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
-            請在右側畫布使用「紅色塗抹筆刷」框選要修改的區域（畫錯可按工具列的「上一步」撤銷），在下方 Prompt 輸入希望塗抹區域替換成什麼內容，然後點擊執行！
-          </p>
+        <div id="inpaintGuideBox" class="hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl px-3 py-2 text-xs text-rose-800 dark:text-rose-200">
+          <p class="flex items-center gap-1.5"><i data-lucide="brush" class="w-3.5 h-3.5 text-rose-500"></i> 在畫布塗抹要修改的區域，再輸入替換內容</p>
         </div>
 
         <!-- 全圖整體修正提示引導 (微調分頁顯示) -->
-        <div id="refineGuideBox" class="hidden bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl p-3 text-xs text-blue-800 dark:text-blue-200">
-          <p class="font-bold flex items-center gap-1.5 mb-1">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> 全圖補充修正指引：
-          </p>
-          <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
-            系統將自動以右側畫布的原圖為基底（不需塗抹筆刷）。請在上方 Prompt 輸入想微調的地方（如：「背景改為珊瑚粉」、「增加舞台暖色燈光」、「右側文字修改為...」），GPT Image 2.5 將在維持原圖主要人物的前提下整體微調！
-          </p>
+        <div id="refineGuideBox" class="hidden bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl px-3 py-2 text-xs text-blue-800 dark:text-blue-200">
+          <p class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> 以畫布原圖為基底，輸入要微調的地方</p>
         </div>
 
         <!-- 執行按鈕 -->
         <button id="btnExecute" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none" title="快捷鍵：在提示詞框按 Ctrl/⌘ + Enter">
           <i data-lucide="sparkles" class="w-5 h-5"></i>
-          <span id="btnExecuteText">立即生成圖片 (GPT 2.6)</span>
+          <span id="btnExecuteText">生成</span>
         </button>
         <div class="flex items-center justify-between -mt-2 px-1 text-[10px] text-slate-400">
-          <span><kbd class="font-mono">Ctrl/⌘ + Enter</kbd> 快速送出</span>
+          <span></span>
           <button type="button" id="btnCancelRequest" class="hidden text-rose-500 hover:text-rose-600 font-bold underline">取消本次請求</button>
         </div>
 
@@ -608,7 +585,7 @@
           <!-- 消除假網格轉真透明按鈕 -->
           <button type="button" id="btnRemoveFakeGrid" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] transition-colors shadow-xs cursor-pointer" title="若 AI 或素材誤畫出灰白棋盤格，點此立即一鍵消除假網格，轉換為 100% 純透明 PNG 圖層">
             <i data-lucide="wand-2" class="w-3.5 h-3.5 text-emerald-500"></i>
-            <span class="hidden sm:inline">消除假網格轉真透明</span>
+            <span class="hidden sm:inline">去假網格</span>
           </button>
 
           <!-- 棋盤透明 / 預覽深底 快速切換按鈕 -->
@@ -712,10 +689,7 @@
           <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center mb-3 text-slate-400 shadow-inner">
             <i data-lucide="image" class="w-8 h-8 text-slate-400 dark:text-slate-500"></i>
           </div>
-          <p class="text-slate-700 dark:text-slate-200 font-bold text-base mb-1">畫布目前為空</p>
-          <p class="text-slate-500 dark:text-slate-400 text-xs max-w-sm">
-            請在左側輸入提示詞點擊「立即生成圖片」，或點擊下方歷史圖庫快速載入！
-          </p>
+          <p class="text-slate-500 dark:text-slate-400 font-bold text-base">畫布是空的</p>
         </div>
 
         <!-- 畫布滾動檢視視窗 (Viewport) -->
@@ -743,7 +717,7 @@
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
             <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-500"></i>
-            本次生成結果 (<span id="resultsTrayCount">0</span> 張) ‧ 點選縮圖載入畫布
+            本次結果 (<span id="resultsTrayCount">0</span> 張)
           </span>
           <div class="flex items-center gap-3 text-[11px]">
             <button type="button" id="btnDownloadAllResults" class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1">
@@ -763,7 +737,7 @@
           <div class="flex items-center gap-2">
             <div class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></div>
             <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-              <i data-lucide="message-square-code" class="w-4 h-4 text-blue-500"></i> 對當前圖片補充修正 Prompt (整體對話微調)
+              <i data-lucide="message-square-code" class="w-4 h-4 text-blue-500"></i> 修正指令
             </span>
           </div>
           <div class="flex items-center gap-2">
@@ -773,7 +747,7 @@
             <button type="button" id="btnClearQuickMask" class="hidden text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium underline flex items-center gap-1 cursor-pointer">
               <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清除紅框遮罩
             </button>
-            <span id="refineTargetBadge" class="text-[10px] font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-full transition-all">已就緒 ‧ 全圖微調模式</span>
+            <span id="refineTargetBadge" class="text-[10px] font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-full transition-all">全圖微調</span>
           </div>
         </div>
 
@@ -781,27 +755,27 @@
         <div id="maskActiveAlert" class="hidden p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex flex-wrap items-center justify-between gap-2.5 transition-all shadow-sm">
           <div class="flex items-center gap-1.5 font-medium">
             <i data-lucide="target" class="w-4 h-4 text-rose-500 flex-shrink-0"></i>
-            <span>🎯 <strong>已鎖定紅框標註！</strong>本次將針對<strong>紅框內部重繪</strong>；勾選「鎖定紅框外」時，框外像素由前端合成 100% 保留原圖。</span>
+            <span>🎯 已標註紅框，只重繪框內</span>
           </div>
           <div class="flex items-center gap-3">
             <button type="button" id="btnEraseMaskContent" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition-all cursor-pointer">
               <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
-              <span id="btnEraseMaskText">🧹 消除紅框內容 (無痕抹除)</span>
+              <span id="btnEraseMaskText">🧹 抹除框內</span>
             </button>
             <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
               <input type="checkbox" id="chkFillMaskBounds" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
-              <span>獨立填滿各紅框內部</span>
+              <span>填滿紅框</span>
             </label>
             <label class="flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-medium text-rose-600 dark:text-rose-400">
               <input type="checkbox" id="chkLockOutsideMask" class="rounded accent-rose-500 w-3.5 h-3.5 cursor-pointer" checked>
-              <span>鎖定紅框外 (像素級保留)</span>
+              <span>鎖定框外</span>
             </label>
           </div>
         </div>
 
         <div class="flex items-stretch sm:items-start gap-2.5">
           <div class="relative flex-1">
-            <textarea id="inputQuickRefine" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner custom-scrollbar resize-none leading-relaxed min-h-[64px] max-h-[220px]" placeholder="💬 輸入修正需求（支援 Shift + Enter 跳行換行，Enter 送出）...&#10;例如：&#10;- 兩個人不用疊在一起，稍微分開一點&#10;- 右邊的人可以縮小一點點，配合左邊大小&#10;- 移除畫面中的外框與雜點"></textarea>
+            <textarea id="inputQuickRefine" rows="2" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner custom-scrollbar resize-none leading-relaxed min-h-[64px] max-h-[220px]" placeholder="輸入修正需求…（Enter 送出，Shift+Enter 換行）"></textarea>
           </div>
           <button type="button" id="btnExecuteQuickRefine" class="flex-shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md shadow-blue-600/25 transition-all cursor-pointer min-h-[64px] min-w-[100px]">
             <i data-lucide="sparkles" class="w-4 h-4"></i>
@@ -809,18 +783,10 @@
           </button>
         </div>
 
-        <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 -mt-1">
-          <span class="flex items-center gap-1">
-            <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[9.5px] font-mono">Shift + Enter</kbd> 跳行換行 ‧ 
-            <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-[9.5px] font-mono">Enter</kbd> 送出修正
-          </span>
-          <span class="text-slate-400 dark:text-slate-500">支援多行列點指示</span>
-        </div>
 
         <!-- 快速微調靈感標籤 -->
         <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <span class="text-[10.5px] text-slate-400 font-medium">快捷微調靈感:</span>
-          <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="背景改為深藍科技感漸層 (#0A2540)，增加精緻環境光暈">深藍科技背景</button>
+                    <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="背景改為深藍科技感漸層 (#0A2540)，增加精緻環境光暈">深藍科技背景</button>
           <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="背景改為溫暖珊瑚粉橘 (#FF6E6E)，增強親和力與希望感">暖心珊瑚粉背景</button>
           <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="微調人物眼神與微笑表情，光影更加通透自然">人像表情微調</button>
           <button type="button" class="quick-refine-tag text-[10.5px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" data-refine="強化文字排版對比，核心關鍵字加強亮金黃高光 (#FFE600)">文字高光強化</button>
@@ -834,22 +800,22 @@
           <div class="flex items-center gap-2">
             <i data-lucide="database" class="w-4 h-4 text-emerald-500"></i>
             <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">
-              本機永久歷史圖庫 (<span id="historyCount">0</span>) ‧ 重新整理絕不消失
+              歷史圖庫 (<span id="historyCount">0</span>)
             </h3>
           </div>
           <div class="flex items-center gap-3">
             <a href="gallery.html" target="_blank" rel="noopener" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1" title="以相簿方式檢索、搜尋、批次下載／刪除全部歷史圖片">
-              <i data-lucide="images" class="w-3.5 h-3.5"></i> 開啟相簿檢索
+              <i data-lucide="images" class="w-3.5 h-3.5"></i> 相簿
             </a>
             <button id="btnClearHistory" class="text-xs text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-1">
-              <i data-lucide="trash" class="w-3 h-3"></i> 清除全部歷史
+              <i data-lucide="trash" class="w-3 h-3"></i> 清空
             </button>
           </div>
         </div>
         
         <!-- 歷史縮圖滑動軌道 -->
         <div id="historyStrip" class="flex gap-3 overflow-x-auto pb-2 custom-scrollbar min-h-[105px] items-center">
-          <p id="historyEmptyMsg" class="text-xs text-slate-400 dark:text-slate-600 italic">尚無生成紀錄，生成後的每張圖片都會永久保存於此，重整不遺失...</p>
+          <p id="historyEmptyMsg" class="text-xs text-slate-400 dark:text-slate-600 italic">尚無紀錄</p>
         </div>
       </div>
 
@@ -1637,11 +1603,11 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       });
       if (countHint) {
         if (selectedCountSetting === 'auto') {
-          countHint.innerText = `依畫質自動 (${effective} 張) ‧ 分別計費`;
+          countHint.innerText = `自動 → ${effective} 張`;
         } else if (selectedCountSetting === '1') {
-          countHint.innerText = '單張生成 ‧ 標準計費';
+          countHint.innerText = '';
         } else {
-          countHint.innerText = `批量 ${selectedCountSetting} 張 ‧ 每張分別計費`;
+          countHint.innerText = '每張分別計費';
         }
       }
       updateExecuteButtonText();
@@ -1666,14 +1632,14 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       const countBadge = count > 1 ? ` (×${count} 張)` : '';
       if (currentMode === 'generate') {
         if (referenceImages.length > 0) {
-          btnExecuteText.innerText = `✨ 依據 ${referenceImages.length} 張素材生成${countBadge}`;
+          btnExecuteText.innerText = `以 ${referenceImages.length} 張素材生成${countBadge}`;
         } else {
-          btnExecuteText.innerText = `立即生成圖片 (GPT 2.6)${countBadge}`;
+          btnExecuteText.innerText = `生成${countBadge}`;
         }
       } else if (currentMode === 'refine') {
-        btnExecuteText.innerText = '🚀 依據畫布原圖送出整體修正 (GPT 2.6)';
+        btnExecuteText.innerText = '送出微調';
       } else {
-        btnExecuteText.innerText = '開始局部修圖 (AI Inpaint)';
+        btnExecuteText.innerText = '局部重繪';
       }
     }
 
@@ -2314,7 +2280,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         if (toolClearMask) toolClearMask.classList.remove('hidden');
       } else {
         if (refineTargetBadge) {
-          refineTargetBadge.innerText = currentImageObj ? '已就緒 ‧ 全圖微調模式' : '等待畫布載入圖片';
+          refineTargetBadge.innerText = currentImageObj ? '全圖微調' : '尚無圖片';
           refineTargetBadge.className = 'text-[10px] font-semibold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-full';
         }
         if (maskActiveAlert) maskActiveAlert.classList.add('hidden');
@@ -4142,7 +4108,7 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
           </div>
           <div class="flex gap-2 px-4 pt-3" data-role="tabs"></div>
           <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-2" data-role="list"></div>
-          <div class="px-4 pb-3 text-[11px] text-slate-400">每次「送出」、「清空 / 清除重來」前與離開輸入框時自動保存，最多 ${PROMPT_HISTORY_MAX} 筆，僅存在本機瀏覽器。</div>
+          <div class="px-4 pb-3 text-[11px] text-slate-400">自動保存，最多 ${PROMPT_HISTORY_MAX} 筆。</div>
         </div>`;
       document.body.appendChild(el);
       el.addEventListener('click', (e) => {
@@ -4227,11 +4193,12 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
     if (inputQuickRefine) inputQuickRefine.addEventListener('blur', () => recordPrompt('refine', inputQuickRefine.value, '離開輸入框'));
 
     // -------------------------------------------------------------
-    // 14.6 範本（Preset）：儲存 提示詞 ＋ 參考素材圖 ＋ 生成參數，一鍵套用
+    // 14.6 範本庫（Preset）：提示詞 ＋ 參考素材圖 ＋ 生成參數；支援資料夾、標籤、匯出入
     // 使用獨立資料庫，不影響歷史圖庫
     // -------------------------------------------------------------
     const PRESET_DB = 'OwnImagePresetsDB';
     const PRESET_STORE = 'presets';
+    const UNFILED = '未分類';
 
     function openPresetDB() {
       return new Promise((resolve, reject) => {
@@ -4253,7 +4220,9 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
         tx.onerror = () => reject(tx.error);
       });
     }
-    const presetGetAll = async () => ((await presetTx('readonly', s => s.getAll())) || []).sort((a, b) => b.updatedAt - a.updatedAt);
+    const presetGetAll = async () => ((await presetTx('readonly', s => s.getAll())) || [])
+      .map(p => ({ folder: '', tags: [], ...p }))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
     const presetPut = (item) => presetTx('readwrite', s => s.put(item));
     const presetDelete = (id) => presetTx('readwrite', s => s.delete(id));
 
@@ -4264,38 +4233,91 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       } catch (_) { /* 無痕模式等情況略過 */ }
     }
 
+    const parseTags = (s) => [...new Set(String(s || '').split(/[,，、\s#]+/).map(t => t.trim()).filter(Boolean))];
+    const currentSettings = () => ({
+      model: selectModel.value, size: selectResolution.value, quality: selectQuality.value,
+      background: selectBackground.value, format: selectFormat.value, count: selectedCountSetting
+    });
+
+    // ---- 儲存／編輯表單（單一小視窗） ----
+    function showPresetForm({ title, name, folder, tags, folders, allTags, withSnapshot }) {
+      return new Promise((resolve) => {
+        const el = document.createElement('div');
+        el.className = 'fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
+        el.innerHTML = `
+          <form class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm p-4 flex flex-col gap-3 text-sm">
+            <div class="font-black text-slate-800 dark:text-slate-100">${title}</div>
+            ${withSnapshot ? `<div class="text-[11px] text-slate-400">將儲存：提示詞${referenceImages.length ? ` ＋ ${referenceImages.length} 張素材` : ''} ＋ 參數</div>` : ''}
+            <label class="flex flex-col gap-1 text-xs text-slate-500">名稱
+              <input name="name" required maxlength="60" class="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+            </label>
+            <label class="flex flex-col gap-1 text-xs text-slate-500">資料夾（可留空，輸入新名稱即建立）
+              <input name="folder" list="presetFolderList" maxlength="30" placeholder="${UNFILED}" class="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+              <datalist id="presetFolderList">${folders.map(f => `<option value="${escapeHtml(f)}">`).join('')}</datalist>
+            </label>
+            <label class="flex flex-col gap-1 text-xs text-slate-500">標籤（用逗號或空白分隔）
+              <input name="tags" placeholder="例：選戰, 人物" class="px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:border-amber-500">
+            </label>
+            ${allTags.length ? `<div class="flex flex-wrap gap-1.5 -mt-1">${allTags.map(t => `<button type="button" data-tag="${escapeHtml(t)}" class="px-2 py-0.5 rounded-md text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/40">#${escapeHtml(t)}</button>`).join('')}</div>` : ''}
+            <div class="flex justify-end gap-2 pt-1">
+              <button type="button" data-act="cancel" class="px-3 py-2 rounded-lg text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">取消</button>
+              <button type="submit" class="px-4 py-2 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-white">儲存</button>
+            </div>
+          </form>`;
+        document.body.appendChild(el);
+        const form = el.querySelector('form');
+        form.elements.name.value = name || ''; form.elements.folder.value = folder || ''; form.elements.tags.value = (tags || []).join(', ');
+        const close = (val) => { el.remove(); resolve(val); };
+        el.addEventListener('click', (e) => {
+          if (e.target === el || e.target.closest('[data-act="cancel"]')) return close(null);
+          const tb = e.target.closest('[data-tag]');
+          if (tb) { form.elements.tags.value = parseTags(form.elements.tags.value + ' ' + tb.dataset.tag).join(', '); }
+        });
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          close({ name: form.elements.name.value.trim(), folder: form.elements.folder.value.trim().replace(new RegExp('^' + UNFILED + '$'), ''), tags: parseTags(form.elements.tags.value) });
+        });
+        form.elements.name.focus(); form.elements.name.select();
+      });
+    }
+
     async function saveCurrentAsPreset() {
       const text = inputPrompt.value.trim();
       if (!text && referenceImages.length === 0) {
         showStatus('目前沒有提示詞或素材可以儲存', 'error');
         return;
       }
-      const defaultName = (text.replace(/\s+/g, ' ').slice(0, 16) || '未命名範本');
-      const name = window.prompt('範本名稱（同名會覆蓋更新）：', defaultName);
-      if (name === null) return;
-      const finalName = name.trim() || defaultName;
-      const existing = (await presetGetAll()).find(p => p.name === finalName);
-      if (existing && !confirm(`已有同名範本「${finalName}」，要覆蓋更新嗎？`)) return;
+      const all = await presetGetAll();
+      const res = await showPresetForm({
+        title: '存為範本',
+        name: text.replace(/\s+/g, ' ').slice(0, 16) || '未命名範本',
+        folder: lastPresetFolder, tags: [],
+        folders: [...new Set(all.map(p => p.folder).filter(Boolean))],
+        allTags: [...new Set(all.flatMap(p => p.tags))],
+        withSnapshot: true
+      });
+      if (!res) return;
+      const existing = all.find(p => p.name === res.name && p.folder === res.folder);
+      if (existing && !confirm(`「${res.folder || UNFILED}」已有同名範本「${res.name}」，要覆蓋嗎？`)) return;
+      lastPresetFolder = res.folder;
       const item = {
         ...(existing ? { id: existing.id } : {}),
-        name: finalName,
+        name: res.name, folder: res.folder, tags: res.tags,
         prompt: inputPrompt.value,
         refs: referenceImages.map(r => ({ dataUrl: r.dataUrl, name: r.name, width: r.width, height: r.height })),
-        settings: {
-          model: selectModel.value, size: selectResolution.value, quality: selectQuality.value,
-          background: selectBackground.value, format: selectFormat.value, count: selectedCountSetting
-        },
+        settings: currentSettings(),
         createdAt: existing ? existing.createdAt : Date.now(),
         updatedAt: Date.now()
       };
       try {
         await presetPut(item);
         refreshPresetCount();
-        showStatus(`🔖 已儲存範本「${finalName}」（提示詞${item.refs.length ? ` ＋ ${item.refs.length} 張素材` : ''} ＋ 參數）`, 'success');
+        showStatus(`🔖 已儲存範本「${res.name}」`, 'success');
       } catch (err) {
         showStatus(`範本儲存失敗：${err.message || err}`, 'error');
       }
     }
+    let lastPresetFolder = '';
 
     function applyPreset(p) {
       recordPrompt('main', inputPrompt.value, '套用範本前');
@@ -4317,34 +4339,66 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
       showStatus(`📂 已套用範本「${p.name}」`, 'success');
     }
 
+    // ---- 範本庫視窗 ----
     let presetModal = null;
+    const presetView = { folder: null, tag: null, q: '' };   // folder: null=全部, ''=未分類
+
+    function presetFiltered(all) {
+      const q = presetView.q.trim().toLowerCase();
+      return all.filter(p =>
+        (presetView.folder === null || p.folder === presetView.folder) &&
+        (!presetView.tag || p.tags.includes(presetView.tag)) &&
+        (!q || `${p.name} ${p.prompt} ${p.tags.join(' ')} ${p.folder}`.toLowerCase().includes(q)));
+    }
+
     function ensurePresetModal() {
       if (presetModal) return presetModal;
       const el = document.createElement('div');
       el.className = 'hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
       el.innerHTML = `
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-          <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-            <span class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="bookmarks" class="w-4 h-4 text-amber-500"></i> 我的範本</span>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+          <div class="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800">
+            <span class="font-black text-slate-800 dark:text-slate-100 flex items-center gap-2"><i data-lucide="bookmarks" class="w-4 h-4 text-amber-500"></i> 範本庫</span>
+            <input data-role="q" type="search" placeholder="搜尋名稱、提示詞、標籤" class="flex-1 px-3 py-1.5 rounded-lg text-xs bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:outline-none focus:border-amber-500">
+            <button type="button" data-act="import" class="text-xs text-slate-500 hover:text-amber-600 flex items-center gap-1"><i data-lucide="upload" class="w-3.5 h-3.5"></i> 匯入</button>
+            <button type="button" data-act="export" class="text-xs text-slate-500 hover:text-amber-600 flex items-center gap-1"><i data-lucide="download" class="w-3.5 h-3.5"></i> <span data-role="exportLabel">匯出</span></button>
             <button type="button" data-act="close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <input data-role="file" type="file" accept="application/json,.json" class="hidden">
           </div>
+          <div class="px-4 pt-3 flex flex-wrap gap-1.5" data-role="folders"></div>
+          <div class="px-4 pt-2 flex flex-wrap gap-1.5" data-role="tags"></div>
           <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-2" data-role="list"></div>
-          <div class="px-4 pb-3 text-[11px] text-slate-400">範本包含提示詞、參考素材圖與生成參數，僅存在本機瀏覽器。套用會取代目前的提示詞與素材（原提示詞會先存入歷史）。</div>
         </div>`;
       document.body.appendChild(el);
+
+      el.querySelector('[data-role="q"]').addEventListener('input', (e) => { presetView.q = e.target.value; renderPresetList(); });
+      el.querySelector('[data-role="file"]').addEventListener('change', async (e) => {
+        const f = e.target.files[0]; e.target.value = '';
+        if (f) importPresets(f);
+      });
       el.addEventListener('click', async (e) => {
         if (e.target === el || e.target.closest('[data-act="close"]')) { el.classList.add('hidden'); return; }
+        if (e.target.closest('[data-act="import"]')) { el.querySelector('[data-role="file"]').click(); return; }
+        if (e.target.closest('[data-act="export"]')) { exportPresets(); return; }
+        const fb = e.target.closest('[data-folder]');
+        if (fb) { const v = fb.dataset.folder; presetView.folder = v === '\u0000all' ? null : v; presetView.tag = null; renderPresetList(); return; }
+        const tb = e.target.closest('[data-tagf]');
+        if (tb) { presetView.tag = presetView.tag === tb.dataset.tagf ? null : tb.dataset.tagf; renderPresetList(); return; }
         const row = e.target.closest('[data-id]');
         if (!row) return;
-        const id = Number(row.dataset.id);
-        const p = (await presetGetAll()).find(x => x.id === id);
+        const all = await presetGetAll();
+        const p = all.find(x => x.id === Number(row.dataset.id));
         if (!p) return;
         if (e.target.closest('[data-act="delete"]')) {
           if (!confirm(`刪除範本「${p.name}」？`)) return;
-          await presetDelete(id); refreshPresetCount(); renderPresetList();
-        } else if (e.target.closest('[data-act="rename"]')) {
-          const n = window.prompt('新的範本名稱：', p.name);
-          if (n && n.trim()) { p.name = n.trim(); p.updatedAt = Date.now(); await presetPut(p); renderPresetList(); }
+          await presetDelete(p.id); refreshPresetCount(); renderPresetList();
+        } else if (e.target.closest('[data-act="edit"]')) {
+          const res = await showPresetForm({
+            title: '編輯範本', name: p.name, folder: p.folder, tags: p.tags,
+            folders: [...new Set(all.map(x => x.folder).filter(Boolean))],
+            allTags: [...new Set(all.flatMap(x => x.tags))], withSnapshot: false
+          });
+          if (res) { await presetPut({ ...p, ...res, updatedAt: Date.now() }); renderPresetList(); }
         } else {
           applyPreset(p);
           el.classList.add('hidden');
@@ -4356,9 +4410,22 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
 
     async function renderPresetList() {
       const el = ensurePresetModal();
-      const list = await presetGetAll();
-      const box = el.querySelector('[data-role="list"]');
-      box.innerHTML = list.length ? list.map(p => `
+      const all = await presetGetAll();
+      const folders = [...new Set(all.map(p => p.folder).filter(Boolean))].sort();
+      if (presetView.folder && !folders.includes(presetView.folder)) presetView.folder = null;
+      const chip = (label, count, active, attr) => `<button type="button" ${attr} class="px-2.5 py-1 rounded-lg text-xs font-bold ${active ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-amber-100 dark:hover:bg-amber-900/40'}">${label} <span class="opacity-70 font-mono">${count}</span></button>`;
+      const unfiledN = all.filter(p => !p.folder).length;
+      el.querySelector('[data-role="folders"]').innerHTML =
+        chip('全部', all.length, presetView.folder === null, 'data-folder="\u0000all"') +
+        folders.map(f => chip(`📁 ${escapeHtml(f)}`, all.filter(p => p.folder === f).length, presetView.folder === f, `data-folder="${escapeHtml(f)}"`)).join('') +
+        (unfiledN && folders.length ? chip(UNFILED, unfiledN, presetView.folder === '', 'data-folder=""') : '');
+      const scope = all.filter(p => presetView.folder === null || p.folder === presetView.folder);
+      const tags = [...new Set(scope.flatMap(p => p.tags))].sort();
+      el.querySelector('[data-role="tags"]').innerHTML = tags.map(t =>
+        `<button type="button" data-tagf="${escapeHtml(t)}" class="px-2 py-0.5 rounded-md text-[11px] ${presetView.tag === t ? 'bg-amber-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-900/40'}">#${escapeHtml(t)}</button>`).join('');
+      const list = presetFiltered(all);
+      el.querySelector('[data-role="exportLabel"]').textContent = `匯出 (${list.length})`;
+      el.querySelector('[data-role="list"]').innerHTML = list.length ? list.map(p => `
         <div data-id="${p.id}" class="flex gap-3 border border-slate-200 dark:border-slate-700 hover:border-amber-400 rounded-xl p-2.5 bg-slate-50 dark:bg-slate-950 cursor-pointer transition-colors">
           <div class="flex-shrink-0 flex gap-1">
             ${(p.refs || []).slice(0, 3).map(r => `<img src="${r.dataUrl}" class="w-14 h-14 rounded-lg object-cover bg-slate-800">`).join('') || '<div class="w-14 h-14 rounded-lg bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-[10px]">純文字</div>'}
@@ -4367,15 +4434,58 @@ Professional executive branding, clean editorial layout, Leica camera portrait d
             <div class="flex items-center justify-between gap-2">
               <span class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">${escapeHtml(p.name)}</span>
               <span class="flex items-center gap-3 text-[11px] flex-shrink-0">
-                <button type="button" data-act="rename" class="text-slate-400 hover:text-slate-700 dark:hover:text-white">改名</button>
+                <button type="button" data-act="edit" class="text-slate-400 hover:text-slate-700 dark:hover:text-white">編輯</button>
                 <button type="button" data-act="delete" class="text-slate-400 hover:text-rose-500">刪除</button>
               </span>
             </div>
-            <div class="text-[11px] text-slate-400 mt-0.5">${formatPromptTime(p.updatedAt)} ‧ ${(p.refs || []).length} 張素材 ‧ ${escapeHtml((p.settings && p.settings.model) || '')}</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">${p.folder ? `📁 ${escapeHtml(p.folder)} ‧ ` : ''}${formatPromptTime(p.updatedAt)} ‧ ${(p.refs || []).length} 張素材${p.tags.length ? ' ‧ ' + p.tags.map(t => '#' + escapeHtml(t)).join(' ') : ''}</div>
             <div class="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 break-words">${escapeHtml((p.prompt || '').slice(0, 160))}</div>
           </div>
-        </div>`).join('') : '<div class="text-center text-sm text-slate-400 py-8">還沒有範本。設定好提示詞與素材後，按「存範本」即可儲存。</div>';
+        </div>`).join('') : '<div class="text-center text-sm text-slate-400 py-8">沒有範本</div>';
       lucide.createIcons();
+    }
+
+    // ---- 匯出／匯入（JSON，含素材圖） ----
+    async function exportPresets() {
+      const list = presetFiltered(await presetGetAll());
+      if (!list.length) { showStatus('沒有可匯出的範本', 'error'); return; }
+      const payload = {
+        format: 'ownimage-presets', version: 1, exportedAt: new Date().toISOString(),
+        items: list.map(({ id, ...rest }) => rest)
+      };
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `範本庫_${new Date().toISOString().slice(0, 10)}_${list.length}筆.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      showStatus(`已匯出 ${list.length} 筆範本`, 'success');
+    }
+
+    async function importPresets(file) {
+      try {
+        const data = JSON.parse(await file.text());
+        const items = Array.isArray(data) ? data : data.items;
+        if (!Array.isArray(items)) throw new Error('格式不符');
+        const existing = await presetGetAll();
+        let added = 0, updated = 0;
+        for (const raw of items) {
+          if (!raw || typeof raw.name !== 'string') continue;
+          const item = {
+            name: raw.name.slice(0, 60), folder: String(raw.folder || ''), tags: Array.isArray(raw.tags) ? raw.tags.map(String) : [],
+            prompt: String(raw.prompt || ''), refs: Array.isArray(raw.refs) ? raw.refs.filter(r => r && typeof r.dataUrl === 'string' && r.dataUrl.startsWith('data:image/')) : [],
+            settings: raw.settings && typeof raw.settings === 'object' ? raw.settings : {},
+            createdAt: raw.createdAt || Date.now(), updatedAt: raw.updatedAt || Date.now()
+          };
+          const same = existing.find(p => p.name === item.name && p.folder === item.folder);
+          if (same) { item.id = same.id; updated++; } else { added++; }
+          await presetPut(item);
+        }
+        refreshPresetCount(); renderPresetList();
+        showStatus(`匯入完成：新增 ${added} 筆、覆蓋 ${updated} 筆`, 'success');
+      } catch (err) {
+        showStatus(`匯入失敗：${err.message || err}`, 'error');
+      }
     }
 
     document.getElementById('btnSavePreset').addEventListener('click', saveCurrentAsPreset);
